@@ -1,0 +1,46 @@
+{% extends 'base.html' %}
+
+{% block content %}
+    <h1>Регистрация нового пользователя</h1>
+    <form action="" method="post">
+        {{ form.hidden_tag() }}
+        <p>
+            {{ form.username_field.label }}
+            {{ form.username_field(class='form-control')}}
+            {% for error in form.username_field.errors %}
+                    <div class="alert alert-danger" role="alert">
+                        {{ error }}
+                    </div>
+                {% endfor %}
+        </p>
+        <p>
+            {{ form.email_field.label }}
+            {{ form.email_field(class='form-control')}}
+            {% for error in form.email_field.errors %}
+                    <div class="alert alert-danger" role="alert">
+                        {{ error }}
+                    </div>
+                {% endfor %}
+        </p>
+        <p>
+            {{ form.password_field.label }}
+            {{ form.password_field(class='form-control')}}
+            {% for error in form.password_field.errors %}
+                    <div class="alert alert-danger" role="alert">
+                        {{ error }}
+                    </div>
+                {% endfor %}
+        </p>
+        <p>
+            {{ form.password_again_field.label }}
+            {{ form.password_again_field(class='form-control')}}
+            {% for error in form.password_again_field.errors %}
+                    <div class="alert alert-danger" role="alert">
+                        {{ error }}
+                    </div>
+                {% endfor %}
+        </p>
+        <p>{{ form.submit_button(type='submit', class='btn btn-primary') }}</p>
+        <div>{{ message }}</div>
+    </form>
+{% endblock %}
