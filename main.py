@@ -2,6 +2,7 @@
 from flask import *
 from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import datetime
+from flask_login import LoginManager, UserMixin, login_user, logout_user, current_user, login_required
 # inner modules
 # DATABASES
 from data import db_session
@@ -11,23 +12,51 @@ from data.tickets import Ticket
 from data.comments import Comment
 # FORMS
 from forms.registration import RegistrationForm
-from  forms.login import LoginForm
+from forms.login import LoginForm
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'yandexlyceum_secret_key'  # подумать над заменой CSRF-ключа в далёком будущем
+login_manager = LoginManager()
+login_manager.init_app(app)
+
+# -----L O G I N-----
+@login_manager.user_loader
+def load_user(user_id):
+    db_sess = db_session.create_session()
+    return db_sess.get(User, user_id)
 
 
+@app.route('/', methods=["GET", "POST"])
+@app.route('/login', methods=["GET", "POST"])
+def login_page():
+    form = LoginForm()
+    if form.validate_on_submit():
+        db_sess = db_session.create_session()
+        user = db_sess.query(User).filter(User.email == form.email_field.data).first()
+        if user and check_password_hash(user.hashed_password, form.password_field.data):
+            login_user(user)
+            return redirect('/main')
+    return render_template('login.html', title='Авторизация', form=form)
+
+
+@app.route('/logout', methods=["GET", "POST"])
+@login_required
+def logout():
+    logout_user()
+    return redirect("/")
+# -----E N D-----
+# -----R E G I S T R A T I O N-----
 @app.route('/register', methods=["GET", "POST"])
 def registration_page():
     form = RegistrationForm()
     if form.validate_on_submit():
         if form.password_field.data != form.password_again_field.data:
-            return render_template('registration.html', title='Регистрация нового пользователя',
+            return render_template('register.html', title='Регистрация нового пользователя',
                                    form=form,
                                    message="Пароли не совпадают")
         db_sess = db_session.create_session()
         if db_sess.query(User).filter(User.email == form.email_field.data).first():
-            return render_template('registration.html', title='Регистрация нового пользователя',
+            return render_template('register.html', title='Регистрация нового пользователя',
                                    form=form,
                                    message="Такой пользователь уже есть")
         user = User(
@@ -38,23 +67,30 @@ def registration_page():
         user.set_password(form.password_field.data)
         db_sess.add(user)
         db_sess.commit()
-        return redirect('/login')
-    return render_template('registration.html', title='Регистрация нового пользователя', form=form)
-
-
-@app.route('/login', methods=["GET", "POST"])
-def login_page():
-    form = LoginForm()
-    if form.validate_on_submit():
-        return redirect('/')
-    return render_template('login.html', title='Авторизация', form=form)
-
-
-@app.route('/', methods=["GET"])
+        return redirect('/main')
+    return render_template('register.html', title='Регистрация нового пользователя', form=form)
+# -----E N D-----
+# -----P A G E S-----
+@app.route('/main', methods=["GET", "POST"])
 def main_page():
-    return render_template('main.html', title='Главная страница')
+    parameters = {
+        'title': 'Главная страница',
+        'image': url_for('static', filename='images/THEREISNOPHOTO.png'),
+        'about': ' '.join(open('static/files/about.txt', 'r').readlines()),
+    }
+    return render_template('main.html', **parameters)
 
 
+@app.route('/profile', methods=["GET", "POST"])
+def profile_page():
+    return 'заглушка'
+
+
+@app.route('/excursions', methods=["GET", "POST"])
+def excursions():
+    return 'заглушка'
+# -----E N D-----
+# -----T U R N I N G _ O N-----
 if __name__ == '__main__':
     db_session.global_init("db/databaseFile.db")
     session = db_session.create_session()
