@@ -1,0 +1,14 @@
+{% extends 'base.html' %}
+
+{% block content %}
+    <p>Все экскурсии:</p>
+    <br>
+    {% for exc in excursions %}
+        <div>
+            <img src="{{ exc.img }}" alt="NO_DATA">
+            <p>Название: {{ exc.title }}, {{ exc.id }}</p>
+            <p>Описание: {{ exc.descryption}}</p>
+            <p>Сумма, выплачиваемая экскурсоводу после экскурсии: {{ exc.price }}</p>
+        </div>
+    {% endfor %}
+{% endblock %}
