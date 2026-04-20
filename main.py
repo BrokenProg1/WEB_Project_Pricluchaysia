@@ -83,12 +83,26 @@ def main_page():
 
 @app.route('/profile', methods=["GET", "POST"])
 def profile_page():
-    return 'заглушка'
+    db_sess = db_session.create_session()
+    user = db_sess.query(User).filter(User.id == current_user.id).first()
+    tickets = db_sess.query(Ticket).filter(Ticket.id_user == user.id).all()
+    parameters = {
+        'title': f'Профиль пользователя {user.login}',
+        'user': user,
+        'tickets': tickets
+    }
+    return render_template('profile.html', **parameters)
 
 
 @app.route('/excursions', methods=["GET", "POST"])
 def excursions():
-    return 'заглушка'
+    db_sess = db_session.create_session()
+    excursions = db_sess.query(Excursion).all()
+    parameters = {
+        'title': 'Экскурсии',
+        'excursions': excursions
+    }
+    return render_template('excursions.html', **parameters)
 # -----E N D-----
 # -----T U R N I N G _ O N-----
 if __name__ == '__main__':
@@ -132,7 +146,7 @@ if __name__ == '__main__':
     # excursions
     exc1 = Excursion()
     exc1.title = 'exc_1'
-    exc1.description = 'Just an excursion'
+    exc1.descryption = 'Just an excursion'
     exc1.img = None
     exc1.price = 100
     session.add(exc1)
