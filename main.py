@@ -1,9 +1,10 @@
-# outer modules
+# OUTER MODULES:
 from flask import *
 from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import datetime
-from flask_login import LoginManager, UserMixin, login_user, logout_user, current_user, login_required
-# inner modules
+from flask_login import LoginManager, login_user, logout_user, current_user, login_required
+# END
+# INNER MODULES:
 # DATABASES
 from data import db_session
 from data.users import User
@@ -13,12 +14,28 @@ from data.comments import Comment
 # FORMS
 from forms.registration import RegistrationForm
 from forms.login import LoginForm
+# BLUEPRINT API
+from blueprint_api import users_api
+from blueprint_api import excursions_api
+from blueprint_api import tickets_api
+from blueprint_api import comments_api
+# END
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'yandexlyceum_secret_key'  # подумать над заменой CSRF-ключа в далёком будущем
 login_manager = LoginManager()
 login_manager.init_app(app)
 
+# -----B L U E P R I N T _ A P I-----
+@app.errorhandler(404)
+def not_found(error):
+    return make_response(jsonify({'error': 'Not found'}), 404)
+
+
+@app.errorhandler(400)
+def bad_request(_):
+    return make_response(jsonify({'error': 'Bad Request'}), 400)
+# -----E N D-----
 # -----L O G I N-----
 @login_manager.user_loader
 def load_user(user_id):
@@ -107,6 +124,10 @@ def excursions():
 # -----T U R N I N G _ O N-----
 if __name__ == '__main__':
     db_session.global_init("db/databaseFile.db")
+    app.register_blueprint(users_api.blueprint_u)
+    app.register_blueprint(excursions_api.blueprint_e)
+    app.register_blueprint(tickets_api.blueprint_t)
+    app.register_blueprint(comments_api.blueprint_c)
     session = db_session.create_session()
 
     session.query(Comment).delete()
@@ -184,3 +205,4 @@ if __name__ == '__main__':
     session.close()
 
     app.run(debug=True)
+# -----E N D-----
