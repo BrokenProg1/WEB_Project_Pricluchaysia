@@ -1,20 +1,27 @@
-# outer modules
+# OUTER MODULES:
 from flask import *
 from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import datetime
 from flask_login import LoginManager, UserMixin, login_user, logout_user, current_user, login_required
-# inner modules
-# DATABASES
+from flask_restful import reqparse, abort, Api, Resource
+from requests import get, post, delete, put
+# END
+# INNER MODULES:
+# databases:
 from data import db_session
 from data.users import User
 from data.excursions import Excursion
 from data.tickets import Ticket
 from data.comments import Comment
-# FORMS
+# forms:
 from forms.registration import RegistrationForm
 from forms.login import LoginForm
+# REST-ful API
+from REST_ful_api import users_resources, excursions_resouces, tickets_resources, comments_resources
+# END
 
 app = Flask(__name__)
+api = Api(app)
 app.config['SECRET_KEY'] = 'yandexlyceum_secret_key'  # подумать над заменой CSRF-ключа в далёком будущем
 login_manager = LoginManager()
 login_manager.init_app(app)
@@ -109,6 +116,15 @@ if __name__ == '__main__':
     db_session.global_init("db/databaseFile.db")
     session = db_session.create_session()
 
+    api.add_resource(users_resources.UsersResource, '/api/users')
+    api.add_resource(users_resources.UsersListResource, '/api/users/<int:user_id>')
+    api.add_resource(excursions_resouces.ExcursionsResource, '/api/excursions')
+    api.add_resource(excursions_resouces.ExcursionsListResource, '/api/excursions/<int:exc_id>')
+    api.add_resource(tickets_resources.TicketsResource, '/api/tickets')
+    api.add_resource(tickets_resources.TicketsListResource, '/api/tickets/<int:tic_id>')
+    api.add_resource(comments_resources.CommentsResource, '/api/comments')
+    api.add_resource(comments_resources.CommentsListResource, '/api/comments/<int:com_id>')
+
     session.query(Comment).delete()
     session.query(Ticket).delete()
     session.query(Excursion).delete()
@@ -184,3 +200,4 @@ if __name__ == '__main__':
     session.close()
 
     app.run(debug=True)
+# -----E N D-----
