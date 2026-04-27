@@ -1,5 +1,9 @@
 {% extends 'base.html' %}
 
+{% block menu %}
+    <a class="btn btn-success" href="/main">Главная</a>
+{% endblock %}
+
 {% block content %}
     <p>Имя / Логин / Ник: {{ user.login }}</p>
     <p>Электронная почта: {{ user.email }}</p>
@@ -17,5 +21,8 @@
             <p>Сколько человек проходят по этому билету: {{ tic.count_of_people }}</p>
             <br>
         </div>
+        {% for error in tic.errors %}
+            <div class="error">{{ error }}</div>
+        {% endfor %}
     {% endfor %}
 {% endblock %}

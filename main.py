@@ -84,6 +84,7 @@ def main_page():
         'title': 'Главная страница',
         'image': url_for('static', filename='images/THEREISNOPHOTO.png'),
         'about': ' '.join(open('static/files/about.txt', 'r').readlines()),
+        'role': current_user.role
     }
     return render_template('main.html', **parameters)
 
@@ -110,6 +111,33 @@ def excursions():
         'excursions': excursions
     }
     return render_template('excursions.html', **parameters)
+
+
+@app.route('/excursions/<int:exc_id>', methods=["GET", "POST"])
+def one_excursion(exc_id):
+    db_sess = db_session.create_session()
+    excursion = db_sess.query(Excursion).filter(Excursion.id == exc_id).first()
+    comments = db_sess.query(Comment).filter(Comment.id_event == excursion.id).all()
+    parameters = {
+        'title': excursion.title,
+        'excursion': excursion,
+        'comments': comments
+    }
+    return render_template('inside_of_exc.html', **parameters)
+
+
+@app.route('/guide_excs', methods=["GET", "POST"])
+def guide_excs():
+    if current_user.role not in ['guide', 'administrator']:
+        return redirect('/main')
+    db_sess = db_session.create_session()
+    excursions = db_sess.query(Excursion).all()
+    parameters = {
+        'title': 'Просмотр экскурсий гидами и администраторами',
+        'excursions': excursions,
+        'user': current_user
+    }
+    return render_template('guide_excs.html', parameters=parameters)
 # -----E N D-----
 # -----T U R N I N G _ O N-----
 if __name__ == '__main__':

@@ -16,7 +16,7 @@
                 <p>
                     <a class="btn btn-danger" href="/logout">Выйти</a>
                     <a class="btn btn-warning" href="/profile">Профиль</a>
-                    <a class="btn btn-success" href="/main">Главная</a>
+                    {% block menu %}{% endblock %}
                 </p>
             {% else %}
                 <p>

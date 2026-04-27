@@ -1,5 +1,11 @@
 {% extends "base.html" %}
 
+{% block menu %}
+    {% if role == 'guide' or role == 'administrator' %}
+        <a class="btn btn-primary" href="/guide_excs">Изменение экскурсий</a>
+    {% endif %}
+{% endblock %}
+
 {% block content %}
     <img src="{{ image }}" alt="THERE IS NO PHOTO">
     <h1>Общая информация</h1>
