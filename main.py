@@ -1,6 +1,10 @@
 # OUTER MODULES:
+import os
+import datetime
+
 from flask import *
 from werkzeug.security import generate_password_hash, check_password_hash
+from werkzeug.utils import secure_filename
 from datetime import datetime
 from flask_login import LoginManager, UserMixin, login_user, logout_user, current_user, login_required
 from flask_restful import reqparse, abort, Api, Resource
@@ -16,6 +20,7 @@ from data.comments import Comment
 # forms:
 from forms.registration import RegistrationForm
 from forms.login import LoginForm
+from forms.excursions_edit import EditExc
 # REST-ful API
 from REST_ful_api import users_resources, excursions_resouces, tickets_resources, comments_resources
 # END
@@ -23,6 +28,7 @@ from REST_ful_api import users_resources, excursions_resouces, tickets_resources
 app = Flask(__name__)
 api = Api(app)
 app.config['SECRET_KEY'] = 'yandexlyceum_secret_key'  # подумать над заменой CSRF-ключа в далёком будущем
+app.config['UPLOAD_FOLDER'] = './static/images/'
 login_manager = LoginManager()
 login_manager.init_app(app)
 
@@ -131,13 +137,82 @@ def guide_excs():
     if current_user.role not in ['guide', 'administrator']:
         return redirect('/main')
     db_sess = db_session.create_session()
+    user = db_sess.query(User).filter(User.id == current_user.id).first()
     excursions = db_sess.query(Excursion).all()
     parameters = {
         'title': 'Просмотр экскурсий гидами и администраторами',
         'excursions': excursions,
-        'user': current_user
+        'user': user
     }
-    return render_template('guide_excs.html', parameters=parameters)
+    return render_template('guide_excs.html', **parameters)
+
+
+@app.route('/excursions_edit/<int:exc_id>', methods=["GET", "POST"])
+def excursions_edit(exc_id):
+    form = EditExc()
+    db_sess = db_session.create_session()
+    if request.method == "GET":
+        exc = db_sess.query(Excursion).filter(Excursion.id == exc_id).first()
+        if exc:
+            form.title.data = exc.title
+            form.description.data = exc.description
+            form.price.data = exc.price
+            form.img.data = exc.img
+        else:
+            abort(404)
+    if form.validate_on_submit():
+        exc = db_sess.query(Excursion).filter(Excursion.id == exc_id).first()
+        if exc:
+            exc.title = form.title.data
+            exc.description = form.description.data
+            exc.price = form.price.data
+            print(form.img)
+            #//
+            if form.validate_on_submit():
+                exc = db_sess.query(Excursion).filter(Excursion.id == exc_id).first()
+                if exc:
+                    exc.title = form.title.data
+                    exc.description = form.description.data
+                    exc.price = form.price.data
+                    img_file = form.img.data
+                    if img_file and img_file.filename != '':
+                        filename = secure_filename(img_file.filename)
+                        if filename:
+                            if exc.img:
+                                old_path = os.path.join(app.config['UPLOAD_FOLDER'],
+                                                        exc.img.replace('./static/images/', ''))
+                                if os.path.exists(old_path):
+                                    os.remove(old_path)
+                            unique_filename = f"{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}_{filename}"
+
+                            filepath = os.path.join(app.config['UPLOAD_FOLDER'], unique_filename)
+                            img_file.save(filepath)
+
+                            exc.img = f"static/images/{unique_filename}"
+
+                    db_sess.commit()
+                    return redirect('/guide_excs')
+            #//
+            db_sess.commit()
+            return redirect('/guide_excs')
+        else:
+            abort(404)
+    return render_template('excursions_edit.html',
+                           form=form
+                           )
+
+
+@app.route('/excursions_del/<int:exc_id>', methods=["GET", "POST"])
+def excursions_del(exc_id):
+    db_sess = db_session.create_session()
+    exc = db_sess.query(Excursion).filter(Excursion.id == exc_id
+                                     ).first()
+    if exc:
+        db_sess.delete(exc)
+        db_sess.commit()
+    else:
+        abort(404)
+    return redirect('/guide_excs')
 # -----E N D-----
 # -----T U R N I N G _ O N-----
 if __name__ == '__main__':

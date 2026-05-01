@@ -6,7 +6,7 @@
 {% endblock %}
 
 {% block content %}
-    <p>Вы: {{user.role}}</p>
+    <p>Вы: {{ user.role }}</p>
     {% for exc in excursions %}
         <div>
             <img src="{{ exc.img }}" alt="NO_DATA">

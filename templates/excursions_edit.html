@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+
+{% block menu %}
+    <a class="btn btn-success" href="/main">Главная</a>
+    <a class="btn btn-info" href="/guide_excs">Просмотр экскурсий</a>
+{% endblock %}
+
+{% block content %}
+    <form action="" method="post" enctype="multipart/form-data" novalidate>
+        <div>
+            {{ form.csrf_token }}
+        </div>
+        {% for field in form if field.name != "csrf_token" and field.name != "img" and field.name != "submit" %}
+            <div>
+                {{ field.label() }}
+                {{ field() }}
+                {% for error in field.errors %}
+                    <div class="error">{{ error }}</div>
+                {% endfor %}
+            </div>
+        {% endfor %}
+         <div>
+            {{ form.img.label() }}
+            {{ form.img() }}
+            {% for error in form.img.errors %}
+                <div class="error">{{ error }}</div>
+            {% endfor %}
+        </div>
+        <div>
+            {{ form.submit.label() }}
+            {{ form.submit() }}
+            {% for error in form.submit.errors %}
+                <div class="error">{{ error }}</div>
+            {% endfor %}
+        </div>
+    </form>>
+{% endblock %}
