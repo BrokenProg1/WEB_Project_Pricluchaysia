@@ -9,7 +9,6 @@ from werkzeug.utils import secure_filename
 from datetime import datetime
 from flask_login import LoginManager, UserMixin, login_user, logout_user, current_user, login_required
 from flask_restful import reqparse, abort, Api, Resource
-from requests import get, post, delete, put
 # END
 # INNER MODULES:
 # databases:
