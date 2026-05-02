@@ -11,6 +11,8 @@ class Excursion(DeclaratingDataBase):
     description = sqlalchemy.Column(sqlalchemy.String, nullable=True)
     price = sqlalchemy.Column(sqlalchemy.Float, nullable=False)
     img = sqlalchemy.Column(sqlalchemy.String, nullable=True)
+    way = sqlalchemy.Column(sqlalchemy.String, nullable=True)
+    img_way = sqlalchemy.Column(sqlalchemy.String, nullable=True)
 
 
     def __repr__(self):

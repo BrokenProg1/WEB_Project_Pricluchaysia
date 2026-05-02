@@ -2,7 +2,7 @@
 
 {% block menu %}
     <a class="btn btn-success" href="/main">Главная</a>
-    <a class="btn btn-info" href="/guide_excs">Просмотр экскурсий</a>
+    <a class="btn btn-info" href="/watching_excs">Просмотр экскурсий</a>
 {% endblock %}
 
 {% block content %}
@@ -11,7 +11,7 @@
     <p>{{ excursion.description }}</p>
     {% for com in comments %}
         <div>
-            <h6>{{ com.date }}, {{ com.id }} Has written by {{ com.name_user }} ({{ com.role_user }}), {{ com.id_user }}</h6>
+            <h6>{{ com.date }}, {{ com.id }} Написан {{ com.name_user }} ({{ com.role_user }}), {{ com.id_user }}</h6>
             <h5>{{ com.text }}</h5>
         </div>
         {% for error in com.errors %}

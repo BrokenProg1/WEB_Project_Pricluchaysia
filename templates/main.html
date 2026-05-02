@@ -2,7 +2,10 @@
 
 {% block menu %}
     {% if role == 'guide' or role == 'administrator' %}
-        <a class="btn btn-primary" href="/guide_excs">Изменение экскурсий</a>
+        <a class="btn btn-primary" href="/watching_excs">Изменение экскурсий</a>
+    {% endif %}
+    {% if role == 'administrator' %}
+        <a class="btn btn-primary" href="/adding_excs">Добавление экскурсий</a>
     {% endif %}
 {% endblock %}
 

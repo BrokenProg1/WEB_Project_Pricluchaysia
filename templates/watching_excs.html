@@ -3,6 +3,9 @@
 {% block menu %}
     <a class="btn btn-success" href="/main">Главная</a>
     <a class="btn btn-info" href="/excursions">Просмотр экскурсий</a>
+    {% if user.role == 'administrator' %}
+        <a class="btn btn-primary" href="/adding_excs">Добавление экскурсий</a>
+    {% endif %}
 {% endblock %}
 
 {% block content %}
@@ -13,12 +16,16 @@
             <p>Название: {{ exc.title }}, {{ exc.id }}</p>
             <p>Описание: {{ exc.description }}</p>
             <p>Сумма, выплачиваемая экскурсоводу после экскурсии: {{ exc.price }}</p>
+            <p>Точки, по которым пройдёт экскурсия: {{ exc.way }}</p>
+            <img src="{{ exc.img_way }}" alt="NO_DATA">
+            <br>
             <a class="btn btn-info" href="/excursions/{{ exc.id }}">Прочитать отзывы</a>
-            <a class="btn btn-wirning" href="/excursions_edit/{{ exc.id }}">Изменить</a>  <!-- Заглушка **-->
-            <a class="btn btn-danger" href="/excursions_del/{{ exc.id }}">Удалить</a>  <!-- Заглушка **-->
+            <a class="btn btn-wirning" href="/excursions_edit/{{ exc.id }}">Изменить</a>
+            <a class="btn btn-danger" href="/excursions_del/{{ exc.id }}">Удалить</a>
         </div>
         {% for error in exc.errors %}
             <div class="error">{{ error }}</div>
         {% endfor %}
+    <br>
     {% endfor %}
 {% endblock %}

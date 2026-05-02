@@ -1,6 +1,7 @@
 # OUTER MODULES:
 import os
 import datetime
+import requests
 
 from flask import *
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -21,6 +22,7 @@ from data.comments import Comment
 from forms.registration import RegistrationForm
 from forms.login import LoginForm
 from forms.excursions_edit import EditExc
+from forms.excursion_adding import AddiExc
 # REST-ful API
 from REST_ful_api import users_resources, excursions_resouces, tickets_resources, comments_resources
 # END
@@ -29,6 +31,8 @@ app = Flask(__name__)
 api = Api(app)
 app.config['SECRET_KEY'] = 'yandexlyceum_secret_key'  # подумать над заменой CSRF-ключа в далёком будущем
 app.config['UPLOAD_FOLDER'] = './static/images/'
+maps_server_address = 'https://static-maps.yandex.ru/v1?'
+maps_api_key = 'f3a0fe3a-b07e-4840-a1da-06f18b2ddf13'  # сменить в будущем
 login_manager = LoginManager()
 login_manager.init_app(app)
 
@@ -107,14 +111,15 @@ def profile_page():
     }
     return render_template('profile.html', **parameters)
 
-
+# EXCURSIONS
 @app.route('/excursions', methods=["GET", "POST"])
 def excursions():
     db_sess = db_session.create_session()
     excursions = db_sess.query(Excursion).all()
     parameters = {
         'title': 'Экскурсии',
-        'excursions': excursions
+        'excursions': excursions,
+        'role': current_user.role
     }
     return render_template('excursions.html', **parameters)
 
@@ -132,23 +137,22 @@ def one_excursion(exc_id):
     return render_template('inside_of_exc.html', **parameters)
 
 
-@app.route('/guide_excs', methods=["GET", "POST"])
-def guide_excs():
-    if current_user.role not in ['guide', 'administrator']:
-        return redirect('/main')
+@app.route('/watching_excs', methods=["GET", "POST"])
+def watching_excs():
     db_sess = db_session.create_session()
-    user = db_sess.query(User).filter(User.id == current_user.id).first()
     excursions = db_sess.query(Excursion).all()
     parameters = {
         'title': 'Просмотр экскурсий гидами и администраторами',
         'excursions': excursions,
-        'user': user
+        'user': current_user
     }
-    return render_template('guide_excs.html', **parameters)
+    return render_template('watching_excs.html', **parameters)
 
 
 @app.route('/excursions_edit/<int:exc_id>', methods=["GET", "POST"])
 def excursions_edit(exc_id):
+    if current_user.role not in ['guide', 'administrator']:
+        return redirect('/main')
     form = EditExc()
     db_sess = db_session.create_session()
     if request.method == "GET":
@@ -158,6 +162,9 @@ def excursions_edit(exc_id):
             form.description.data = exc.description
             form.price.data = exc.price
             form.img.data = exc.img
+            form.way.data = exc.way
+            print(exc.way)
+            form.img_way = exc.img_way
         else:
             abort(404)
     if form.validate_on_submit():
@@ -166,35 +173,48 @@ def excursions_edit(exc_id):
             exc.title = form.title.data
             exc.description = form.description.data
             exc.price = form.price.data
-            print(form.img)
-            #//
-            if form.validate_on_submit():
-                exc = db_sess.query(Excursion).filter(Excursion.id == exc_id).first()
-                if exc:
-                    exc.title = form.title.data
-                    exc.description = form.description.data
-                    exc.price = form.price.data
-                    img_file = form.img.data
-                    if img_file and img_file.filename != '':
-                        filename = secure_filename(img_file.filename)
-                        if filename:
-                            if exc.img:
-                                old_path = os.path.join(app.config['UPLOAD_FOLDER'],
-                                                        exc.img.replace('./static/images/', ''))
-                                if os.path.exists(old_path):
-                                    os.remove(old_path)
-                            unique_filename = f"{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}_{filename}"
+            img_file = form.img.data
+            exc.way = form.way.data
+            img_w = form.img_way
+            if img_file and img_file.filename != '':
+                filename = secure_filename(img_file.filename)
+                if filename:
+                    if exc.img:
+                        old_path = os.path.join(app.config['UPLOAD_FOLDER'],
+                                                exc.img.replace('./static/images/', ''))
+                        if os.path.exists(old_path):
+                            os.remove(old_path)
+                    unique_filename = f"{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}_{filename}"
 
-                            filepath = os.path.join(app.config['UPLOAD_FOLDER'], unique_filename)
-                            img_file.save(filepath)
+                    filepath = os.path.join(app.config['UPLOAD_FOLDER'], unique_filename)
+                    img_file.save(filepath)
+                    exc.img = f"static/images/{unique_filename}"
 
-                            exc.img = f"static/images/{unique_filename}"
+                toponims = []
+                print(exc.way)
+                i = '0' + 0
+                for toponim in toponims:
+                    params_for_map = {
+                        'apikey': maps_api_key,
+                        'spn': '0.005,0.005'
+                    }
+                    response = requests.get(maps_server_address, params=params_for_map)
+                    toponims.append(response.json())
+                # остановка: превращаю строку с точками маршрута в список
+                filename_w = secure_filename(img_w.filename)
+                if filename_w:
+                    if exc.img_way:
+                        old_path = os.path.join(app.config['UPLOAD_FOLDER'],
+                                                exc.img_way.replace('./static/images/', ''))
+                        if os.path.exists(old_path):
+                            os.remove(old_path)
+                    unique_filename_w = f"{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}_{filename_w}"
 
-                    db_sess.commit()
-                    return redirect('/guide_excs')
-            #//
+                    filepath_w = os.path.join(app.config['UPLOAD_FOLDER'], unique_filename_w)
+                    img_w.save(filepath_w)
+                    exc.img_way = f"static/images/{unique_filename_w}"
             db_sess.commit()
-            return redirect('/guide_excs')
+            return redirect('/watching_excs')
         else:
             abort(404)
     return render_template('excursions_edit.html',
@@ -204,15 +224,47 @@ def excursions_edit(exc_id):
 
 @app.route('/excursions_del/<int:exc_id>', methods=["GET", "POST"])
 def excursions_del(exc_id):
+    if current_user.role not in ['guide', 'administrator']:
+        return redirect('/main')
     db_sess = db_session.create_session()
-    exc = db_sess.query(Excursion).filter(Excursion.id == exc_id
-                                     ).first()
+    exc = db_sess.query(Excursion).filter(Excursion.id == exc_id).first()
     if exc:
         db_sess.delete(exc)
         db_sess.commit()
     else:
         abort(404)
-    return redirect('/guide_excs')
+    return redirect('/watching_excs')
+
+
+@app.route('/adding_excs', methods=["GET", "POST"])
+def adding_excs():
+    if current_user.role not in ['guide', 'administrator']:
+        return redirect('/main')
+    form = AddiExc()
+    db_sess = db_session.create_session()
+    if form.validate_on_submit():
+        exc = Excursion()
+        exc.title = form.title.data
+        exc.description = form.description.data
+        exc.price = form.price.data
+        img_file = form.img.data
+        if img_file and img_file.filename != '':
+            filename = secure_filename(img_file.filename)
+            if filename:
+                if exc.img:
+                    old_path = os.path.join(app.config['UPLOAD_FOLDER'],
+                                            exc.img.replace('./static/images/', ''))
+                    if os.path.exists(old_path):
+                        os.remove(old_path)
+                unique_filename = f"{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}_{filename}"
+
+                filepath = os.path.join(app.config['UPLOAD_FOLDER'], unique_filename)
+                img_file.save(filepath)
+                exc.img = f"static/images/{unique_filename}"
+        db_sess.add(exc)
+        db_sess.commit()
+        return redirect('/watching_excs')
+    return render_template('adding_excs.html', form=form)
 # -----E N D-----
 # -----T U R N I N G _ O N-----
 if __name__ == '__main__':
@@ -265,9 +317,11 @@ if __name__ == '__main__':
     # excursions
     exc1 = Excursion()
     exc1.title = 'exc_1'
-    exc1.descryption = 'Just an excursion'
+    exc1.description = 'Just an excursion'
     exc1.img = None
     exc1.price = 100
+    exc1.way = '"Светланская улица, 89, Владивосток","улица Володарского, 27, Владивосток"'
+    exc1.img_way = None
     session.add(exc1)
     # end
     # tickets

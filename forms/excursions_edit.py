@@ -7,4 +7,5 @@ class EditExc(FlaskForm):
     description = wtforms.StringField('Новое описание')
     price = wtforms.IntegerField('Новая цена')
     img = wtforms.FileField('Заставка экскурсии')
+    way = wtforms.TextAreaField('Точки маршрута экскурсии (указывать адреса в " через ,)')
     submit = wtforms.SubmitField('Изменить')

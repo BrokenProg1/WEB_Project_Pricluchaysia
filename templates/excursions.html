@@ -2,6 +2,12 @@
 
 {% block menu %}
     <a class="btn btn-success" href="/main">Главная</a>
+    {% if role == 'guide' or role == 'administrator' %}
+        <a class="btn btn-primary" href="/watching_excs">Изменение экскурсий</a>
+    {% endif %}
+    {% if role == "administrator" %}
+        <a class="btn btn-primary" href="/adding_excs">Создать экскурсию</a>
+    {% endif %}
 {% endblock %}
 
 {% block content %}
@@ -13,6 +19,9 @@
             <p>Название: {{ exc.title }}, {{ exc.id }}</p>
             <p>Описание: {{ exc.description }}</p>
             <p>Сумма, выплачиваемая экскурсоводу после экскурсии: {{ exc.price }}</p>
+            <p>Точки, по которым пройдёт экскурсия: {{ exc.way }}</p>
+            <img src="{{ exc.img_way }}" alt="NO_DATA">
+            <br>
             <a class="btn btn-info" href="/excursions/{{ exc.id }}">Прочитать отзывы</a>
         </div>
         {% for error in exc.errors %}
