@@ -16,6 +16,6 @@ class Ticket(DeclaratingDataBase):
 
 
     def __repr__(self):
-        return f"""<User> Id: {self.id} Id of excursion: {self.id_event} Id of customer: {self.id_user}
+        return f"""<Ticket> Id: {self.id} Id of excursion: {self.id_event} Id of customer: {self.id_user}
         Title of excursion: {self.name_event} Price per person: {self.price_event}
         Count of people: {self.count_of_people}"""
