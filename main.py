@@ -2,6 +2,7 @@
 import os
 import datetime
 import requests
+import pprint
 
 from flask import *
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -9,6 +10,8 @@ from werkzeug.utils import secure_filename
 from datetime import datetime
 from flask_login import LoginManager, UserMixin, login_user, logout_user, current_user, login_required
 from flask_restful import reqparse, abort, Api, Resource
+from PIL import Image
+from io import BytesIO
 # END
 # INNER MODULES:
 # databases:
@@ -31,7 +34,9 @@ api = Api(app)
 app.config['SECRET_KEY'] = 'yandexlyceum_secret_key'  # подумать над заменой CSRF-ключа в далёком будущем
 app.config['UPLOAD_FOLDER'] = './static/images/'
 maps_server_address = 'https://static-maps.yandex.ru/v1?'
-maps_api_key = 'f3a0fe3a-b07e-4840-a1da-06f18b2ddf13'  # сменить в будущем
+maps_api_key = 'f3a0fe3a-b07e-4840-a1da-06f18b2ddf13'
+geocoder_api_server = "https://geocode-maps.yandex.ru/1.x/"
+geocoder_api_key = '8013b162-6b42-4997-9691-77b7074026e0'  # сменить в будущем
 login_manager = LoginManager()
 login_manager.init_app(app)
 
@@ -88,6 +93,7 @@ def registration_page():
 # -----E N D-----
 # -----P A G E S-----
 @app.route('/main', methods=["GET", "POST"])
+@login_required
 def main_page():
     parameters = {
         'title': 'Главная страница',
@@ -99,6 +105,7 @@ def main_page():
 
 
 @app.route('/profile', methods=["GET", "POST"])
+@login_required
 def profile_page():
     db_sess = db_session.create_session()
     user = db_sess.query(User).filter(User.id == current_user.id).first()
@@ -112,6 +119,7 @@ def profile_page():
 
 # EXCURSIONS
 @app.route('/excursions', methods=["GET", "POST"])
+@login_required
 def excursions():
     db_sess = db_session.create_session()
     excursions = db_sess.query(Excursion).all()
@@ -124,6 +132,7 @@ def excursions():
 
 
 @app.route('/excursions/<int:exc_id>', methods=["GET", "POST"])
+@login_required
 def one_excursion(exc_id):
     db_sess = db_session.create_session()
     excursion = db_sess.query(Excursion).filter(Excursion.id == exc_id).first()
@@ -137,6 +146,7 @@ def one_excursion(exc_id):
 
 
 @app.route('/watching_excs', methods=["GET", "POST"])
+@login_required
 def watching_excs():
     db_sess = db_session.create_session()
     excursions = db_sess.query(Excursion).all()
@@ -149,6 +159,7 @@ def watching_excs():
 
 
 @app.route('/excursions_edit/<int:exc_id>', methods=["GET", "POST"])
+@login_required
 def excursions_edit(exc_id):
     if current_user.role not in ['guide', 'administrator']:
         return redirect('/main')
@@ -162,7 +173,6 @@ def excursions_edit(exc_id):
             form.price.data = exc.price
             form.img.data = exc.img
             form.way.data = exc.way
-            print(exc.way)
             form.img_way = exc.img_way
         else:
             abort(404)
@@ -174,7 +184,6 @@ def excursions_edit(exc_id):
             exc.price = form.price.data
             img_file = form.img.data
             exc.way = form.way.data
-            img_w = form.img_way
             if img_file and img_file.filename != '':
                 filename = secure_filename(img_file.filename)
                 if filename:
@@ -189,29 +198,39 @@ def excursions_edit(exc_id):
                     img_file.save(filepath)
                     exc.img = f"static/images/{unique_filename}"
 
-                toponims = []
-                print(exc.way)
-                i = '0' + 0
-                for toponim in toponims:
-                    params_for_map = {
-                        'apikey': maps_api_key,
-                        'spn': '0.005,0.005'
-                    }
-                    response = requests.get(maps_server_address, params=params_for_map)
-                    toponims.append(response.json())
-                # остановка: превращаю строку с точками маршрута в список
-                filename_w = secure_filename(img_w.filename)
-                if filename_w:
-                    if exc.img_way:
-                        old_path = os.path.join(app.config['UPLOAD_FOLDER'],
-                                                exc.img_way.replace('./static/images/', ''))
-                        if os.path.exists(old_path):
-                            os.remove(old_path)
-                    unique_filename_w = f"{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}_{filename_w}"
+            toponyms = []
+            entering = [s.strip('"') for s in exc.way.split('","')]
+            for toponym in entering:
+                params_for_map = {
+                    'apikey': geocoder_api_key,
+                    'geocode': toponym,
+                    'format': 'json'
+                }
+                response = requests.get(geocoder_api_server, params=params_for_map)
+                toponyms.append(response.json()["response"]["GeoObjectCollection"]["featureMember"][0]["GeoObject"]['Point']['pos'])
+            center = (sum([float(x.split()[0]) for x in toponyms]) / len(toponyms),
+                      sum([float(y.split()[1]) for y in toponyms]) / len(toponyms))
+            map_params = {
+                "ll": ','.join([str(center[0]), str(center[1])]),
+                "spn": '0.005,0.005',
+                "apikey": maps_api_key,
+                'pt': '~'.join([f'{t.split(',')[0]},{t.split(',')[1]},pm2rdm' for t in [",".join(p.split()) for p in toponyms]]),
+                'format': 'biz'
+            }
+            response = requests.get(maps_server_address, params=map_params)
+            im = BytesIO(response.content)
 
-                    filepath_w = os.path.join(app.config['UPLOAD_FOLDER'], unique_filename_w)
-                    img_w.save(filepath_w)
-                    exc.img_way = f"static/images/{unique_filename_w}"
+            if exc.img_way:
+                old_path = os.path.join(app.config['UPLOAD_FOLDER'],
+                                        exc.img_way.replace('./static/images/', ''))
+                if os.path.exists(old_path):
+                    os.remove(old_path)
+            unique_filename = f"{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.png"
+
+            filepath = os.path.join(app.config['UPLOAD_FOLDER'], unique_filename)
+            Image.open(im).save(filepath)
+            exc.img_way = f"static/images/{unique_filename}"
+
             db_sess.commit()
             return redirect('/watching_excs')
         else:
@@ -222,12 +241,21 @@ def excursions_edit(exc_id):
 
 
 @app.route('/excursions_del/<int:exc_id>', methods=["GET", "POST"])
+@login_required
 def excursions_del(exc_id):
     if current_user.role not in ['guide', 'administrator']:
         return redirect('/main')
     db_sess = db_session.create_session()
     exc = db_sess.query(Excursion).filter(Excursion.id == exc_id).first()
     if exc:
+        try:
+            os.remove(exc.img)
+        except Exception:
+            pass
+        try:
+            os.remove(exc.img_way)
+        except Exception:
+            pass
         db_sess.delete(exc)
         db_sess.commit()
     else:
@@ -236,6 +264,7 @@ def excursions_del(exc_id):
 
 
 @app.route('/adding_excs', methods=["GET", "POST"])
+@login_required
 def adding_excs():
     if current_user.role not in ['guide', 'administrator']:
         return redirect('/main')
@@ -247,6 +276,7 @@ def adding_excs():
         exc.description = form.description.data
         exc.price = form.price.data
         img_file = form.img.data
+        exc.way = form.way.data
         if img_file and img_file.filename != '':
             filename = secure_filename(img_file.filename)
             if filename:
@@ -260,6 +290,40 @@ def adding_excs():
                 filepath = os.path.join(app.config['UPLOAD_FOLDER'], unique_filename)
                 img_file.save(filepath)
                 exc.img = f"static/images/{unique_filename}"
+
+        toponyms = []
+        entering = [s.strip('"') for s in exc.way.split('","')]
+        for toponym in entering:
+            params_for_map = {
+                'apikey': geocoder_api_key,
+                'geocode': toponym,
+                'format': 'json'
+            }
+            response = requests.get(geocoder_api_server, params=params_for_map)
+            toponyms.append(response.json()["response"]["GeoObjectCollection"]["featureMember"][0]["GeoObject"]['Point']['pos'])
+        center = (sum([float(x.split()[0]) for x in toponyms]) / len(toponyms),
+                  sum([float(y.split()[1]) for y in toponyms]) / len(toponyms))
+        map_params = {
+            "ll": ','.join([str(center[0]), str(center[1])]),
+            "spn": '0.005,0.005',
+            "apikey": maps_api_key,
+            'pt': '~'.join([f'{t.split(',')[0]},{t.split(',')[1]},pm2rdm' for t in [",".join(p.split()) for p in toponyms]]),
+            'format': 'biz'
+        }
+        response = requests.get(maps_server_address, params=map_params)
+        im = BytesIO(response.content)
+
+        if exc.img_way:
+            old_path = os.path.join(app.config['UPLOAD_FOLDER'],
+                                    exc.img_way.replace('./static/images/', ''))
+            if os.path.exists(old_path):
+                os.remove(old_path)
+        unique_filename = f"{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.png"
+
+        filepath = os.path.join(app.config['UPLOAD_FOLDER'], unique_filename)
+        Image.open(im).save(filepath)
+        exc.img_way = f"static/images/{unique_filename}"
+
         db_sess.add(exc)
         db_sess.commit()
         return redirect('/watching_excs')
