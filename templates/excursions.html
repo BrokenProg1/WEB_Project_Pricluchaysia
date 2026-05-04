@@ -21,8 +21,9 @@
             <p>Сумма, выплачиваемая экскурсоводу после экскурсии: {{ exc.price }}</p>
             <p>Точки, по которым пройдёт экскурсия: {{ exc.way }}</p>
             <img src="{{ exc.img_way }}" alt="NO_DATA">
-            <br>
+            <br></br>
             <a class="btn btn-info" href="/excursions/{{ exc.id }}">Прочитать отзывы</a>
+            <a class="btn btn-warning" href="/book_on_an_exc/{{ exc.id }}">Записаться</a>
         </div>
         {% for error in exc.errors %}
             <div class="error">{{ error }}</div>

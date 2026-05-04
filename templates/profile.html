@@ -8,21 +8,24 @@
     <p>Имя / Логин / Ник: {{ user.login }}</p>
     <p>Электронная почта: {{ user.email }}</p>
     <p>Id: {{ user.id }}</p>
-    <br>
-    <br>
+    <br></br>
+    <br></br>
     <p>Билеты:</p>
-    <br>
+    <br></br>
     {% for tic in tickets %}
         <div>
-            <p>БИЛЕТ 1</p>
+            <p>БИЛЕТ {{ tic.index }}</p>
             <p>Экскурсия, на которую можно пройти по билету: {{ tic.name_event }}, {{ tic.id_event }}</p>
             <p>Экскурсовод, проводящий этот квест: {{ tic.name_user }}, {{ tic.id_user }}</p>
             <p>Сумма, которую нужно будет перевести экскурсоводу после проведения экскурсии: {{ tic.price_event }}</p>
             <p>Сколько человек проходят по этому билету: {{ tic.count_of_people }}</p>
-            <br>
+            <br></br>
         </div>
         {% for error in tic.errors %}
             <div class="error">{{ error }}</div>
         {% endfor %}
     {% endfor %}
+    {% if not has_tics %}
+        <p>У вас нет билетов</p>
+    {% endif %}
 {% endblock %}

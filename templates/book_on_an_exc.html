@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+
+{% block menu %}
+    <a class="btn btn-warning" href="/excursions">Назад</a>
+    {% if user.role == 'administrator' or user.role == 'guide' %}
+        <a class="btn btn-info" href="/watching_excs">Назад (в режиме редактирования)</a>
+    {% endif %}
+{% endblock %}
+
+{% block content %}
+    <img src="{{ exc.img }}" alt="NO_DATA">
+    <p>Название: {{ exc.title }}, {{ exc.id }}</p>
+    <p>Описание: {{ exc.description }}</p>
+    <p>Сумма, выплачиваемая экскурсоводу после экскурсии: {{ exc.price }}</p>
+    <p>Точки, по которым пройдёт экскурсия: {{ exc.way }}</p>
+    <img src="{{ exc.img_way }}" alt="NO_DATA">
+    <br></br>
+    <form action="" method="POST">
+        {{ form.hidden_tag() }}
+        {% for field in form if field.name != "submit" and field.name != "csrf_token" %}
+            <div>
+                {{ field.label() }}
+                {{ field() }}
+                {% for error in field.errors %}
+                    <div class="error">{{ error }}</div>
+                {% endfor %}
+            </div>
+        {% endfor %}
+        {{ form.submit() }}
+    </form>
+{% endblock %}

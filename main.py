@@ -5,6 +5,7 @@ import requests
 import pprint
 
 from flask import *
+from flask_wtf import form
 from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
 from datetime import datetime
@@ -25,6 +26,7 @@ from forms.registration import RegistrationForm
 from forms.login import LoginForm
 from forms.excursions_edit import EditExc
 from forms.excursion_adding import AddiExc
+from forms.booking_on_an_exc import BookOnAnExc
 # REST-ful API
 from REST_ful_api import users_resources, excursions_resouces, tickets_resources, comments_resources
 # END
@@ -113,14 +115,15 @@ def profile_page():
     parameters = {
         'title': f'Профиль пользователя {user.login}',
         'user': user,
-        'tickets': tickets
+        'tickets': tickets,
+        'has_tics': len(tickets) > 0
     }
     return render_template('profile.html', **parameters)
 
 # EXCURSIONS
 @app.route('/excursions', methods=["GET", "POST"])
 @login_required
-def excursions():
+def excursions():  # для всех
     db_sess = db_session.create_session()
     excursions = db_sess.query(Excursion).all()
     parameters = {
@@ -140,14 +143,15 @@ def one_excursion(exc_id):
     parameters = {
         'title': excursion.title,
         'excursion': excursion,
-        'comments': comments
+        'comments': comments,
+        'user': current_user
     }
     return render_template('inside_of_exc.html', **parameters)
 
 
 @app.route('/watching_excs', methods=["GET", "POST"])
 @login_required
-def watching_excs():
+def watching_excs():  # для привилегированных
     db_sess = db_session.create_session()
     excursions = db_sess.query(Excursion).all()
     parameters = {
@@ -165,76 +169,72 @@ def excursions_edit(exc_id):
         return redirect('/main')
     form = EditExc()
     db_sess = db_session.create_session()
+    exc = db_sess.query(Excursion).filter(Excursion.id == exc_id).first()
+    if not exc:
+        abort(404)
+
     if request.method == "GET":
-        exc = db_sess.query(Excursion).filter(Excursion.id == exc_id).first()
-        if exc:
-            form.title.data = exc.title
-            form.description.data = exc.description
-            form.price.data = exc.price
-            form.img.data = exc.img
-            form.way.data = exc.way
-            form.img_way = exc.img_way
-        else:
-            abort(404)
+        form.title.data = exc.title
+        form.description.data = exc.description
+        form.price.data = exc.price
+        form.img.data = exc.img
+        form.way.data = exc.way
+        form.img_way = exc.img_way
     if form.validate_on_submit():
-        exc = db_sess.query(Excursion).filter(Excursion.id == exc_id).first()
-        if exc:
-            exc.title = form.title.data
-            exc.description = form.description.data
-            exc.price = form.price.data
-            img_file = form.img.data
-            exc.way = form.way.data
-            if img_file and img_file.filename != '':
-                filename = secure_filename(img_file.filename)
-                if filename:
-                    if exc.img:
-                        old_path = os.path.join(app.config['UPLOAD_FOLDER'],
-                                                exc.img.replace('./static/images/', ''))
-                        if os.path.exists(old_path):
-                            os.remove(old_path)
-                    unique_filename = f"{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}_{filename}"
+        exc.title = form.title.data
+        exc.description = form.description.data
+        exc.price = form.price.data
+        img_file = form.img.data
+        exc.way = form.way.data
+        if img_file and img_file.filename != '':
+            filename = secure_filename(img_file.filename)
+            if filename:
+                if exc.img:
+                    old_path = os.path.join(app.config['UPLOAD_FOLDER'],
+                                            exc.img.replace('./static/images/', ''))
+                    if os.path.exists(old_path):
+                        os.remove(old_path)
+                unique_filename = f"{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}_{filename}"
 
-                    filepath = os.path.join(app.config['UPLOAD_FOLDER'], unique_filename)
-                    img_file.save(filepath)
-                    exc.img = f"static/images/{unique_filename}"
+                filepath = os.path.join(app.config['UPLOAD_FOLDER'], unique_filename)
+                img_file.save(filepath)
+                exc.img = f"static/images/{unique_filename}"
 
-            toponyms = []
-            entering = [s.strip('"') for s in exc.way.split('","')]
-            for toponym in entering:
-                params_for_map = {
-                    'apikey': geocoder_api_key,
-                    'geocode': toponym,
-                    'format': 'json'
-                }
-                response = requests.get(geocoder_api_server, params=params_for_map)
-                toponyms.append(response.json()["response"]["GeoObjectCollection"]["featureMember"][0]["GeoObject"]['Point']['pos'])
-            center = (sum([float(x.split()[0]) for x in toponyms]) / len(toponyms),
-                      sum([float(y.split()[1]) for y in toponyms]) / len(toponyms))
-            map_params = {
-                "ll": ','.join([str(center[0]), str(center[1])]),
-                "spn": '0.005,0.005',
-                "apikey": maps_api_key,
-                'pt': '~'.join([f'{t.split(',')[0]},{t.split(',')[1]},pm2rdm' for t in [",".join(p.split()) for p in toponyms]]),
-                'format': 'biz'
+        toponyms = []
+        entering = [s.strip('"') for s in exc.way.split('","')]
+        for toponym in entering:
+            params_for_map = {
+                'apikey': geocoder_api_key,
+                'geocode': toponym,
+                'format': 'json'
             }
-            response = requests.get(maps_server_address, params=map_params)
-            im = BytesIO(response.content)
+            response = requests.get(geocoder_api_server, params=params_for_map)
+            toponyms.append(response.json()["response"]["GeoObjectCollection"]["featureMember"][0]["GeoObject"]['Point']['pos'])
+        center = (sum([float(x.split()[0]) for x in toponyms]) / len(toponyms),
+                  sum([float(y.split()[1]) for y in toponyms]) / len(toponyms))
+        map_params = {
+            "ll": ','.join([str(center[0]), str(center[1])]),
+            "spn": '0.005,0.005',
+            "apikey": maps_api_key,
+            'pt': '~'.join([f'{t.split(',')[0]},{t.split(',')[1]},pm2rdm' for t in [",".join(p.split()) for p in toponyms]]),
+            'format': 'biz'
+        }
+        response = requests.get(maps_server_address, params=map_params)
+        im = BytesIO(response.content)
 
-            if exc.img_way:
-                old_path = os.path.join(app.config['UPLOAD_FOLDER'],
-                                        exc.img_way.replace('./static/images/', ''))
-                if os.path.exists(old_path):
-                    os.remove(old_path)
-            unique_filename = f"{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.png"
+        if exc.img_way:
+            old_path = os.path.join(app.config['UPLOAD_FOLDER'],
+                                    exc.img_way.replace('./static/images/', ''))
+            if os.path.exists(old_path):
+                os.remove(old_path)
+        unique_filename = f"{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.png"
 
-            filepath = os.path.join(app.config['UPLOAD_FOLDER'], unique_filename)
-            Image.open(im).save(filepath)
-            exc.img_way = f"static/images/{unique_filename}"
+        filepath = os.path.join(app.config['UPLOAD_FOLDER'], unique_filename)
+        Image.open(im).save(filepath)
+        exc.img_way = f"static/images/{unique_filename}"
 
-            db_sess.commit()
-            return redirect('/watching_excs')
-        else:
-            abort(404)
+        db_sess.commit()
+        return redirect('/watching_excs')
     return render_template('excursions_edit.html',
                            form=form
                            )
@@ -328,6 +328,46 @@ def adding_excs():
         db_sess.commit()
         return redirect('/watching_excs')
     return render_template('adding_excs.html', form=form)
+
+# TICKETS
+@app.route('/book_on_an_exc/<int:exc_id>', methods=["GET", "POST"])
+@login_required
+def book_on_an_exc(exc_id):
+    db_sess = db_session.create_session()
+    exc = db_sess.query(Excursion).filter(Excursion.id == exc_id).first()
+    form = BookOnAnExc()
+    if not exc:
+        abort(404)
+
+    if form.validate_on_submit():
+        tic = Ticket()
+        tic.id_event = exc_id
+        tic.name_event = exc.title
+        tic.price_event = exc.price
+        tic.id_user = current_user.id
+        tic.name_user = current_user.login
+        tic.count_of_people = form.count_of_people.data
+        if tic.count_of_people < 1:
+            abort(400)
+        if db_sess.query(Ticket).filter(Ticket.id_event == exc_id,
+                                        Ticket.id_user == current_user.id,
+                                        Ticket.count_of_people == tic.count_of_people).first():
+            abort(409)
+
+        db_sess.add(tic)
+        db_sess.commit()
+        if current_user.role == "user":
+            return redirect('/excursions')
+        if current_user.role == "administrator" or current_user.role == "guide":
+            return redirect('/watching_excs')
+
+    parameters = {
+        'title': f'Запись на экскурию {exc.title}',
+        'exc': exc,
+        'user': current_user,
+        'form': form
+    }
+    return render_template('book_on_an_exc.html', **parameters)
 # -----E N D-----
 # -----T U R N I N G _ O N-----
 if __name__ == '__main__':
