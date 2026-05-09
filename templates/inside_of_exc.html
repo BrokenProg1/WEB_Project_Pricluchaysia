@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+
+{% block menu %}
+    <a class="btn btn-success" href="/main">Главная</a>
+    {% if user.role == "user" %}
+        <a class="btn btn-info" href="/excursions">Просмотр экскурсий</a>
+    {% endif %}
+    {% if user.role == "guide" or user.role == "administrator" %}
+        <a class="btn btn-info" href="/watching_excs">Просмотр экскурсий (в режиме редактирования)</a>
+    {% endif %}
+{% endblock %}
+
+{% block content %}
+    <h1>{{ excursion['title'] }}</h1>
+
+    <div class="excursion">
+        <h2>{{ excursion['title'] }}</h2>
+        <p>{{ excursion['description'] }}</p>
+        <p><strong>Цена:</strong> {{ excursion['price'] }} руб.</p>
+    </div>
+
+    <h2>Комментарии</h2>
+
+    {% for comment in comments if comment['id_event'] == exc_id %}
+    <div class="comment">
+        <div class="comment-header">
+            <span class="comment-author">{{ comment['name_user'] }}</span>
+            <span class="comment-date">{{ comment['date'] }}</span>
+        </div>
+        <div class="comment-text">{{ comment['text'] }}</div>
+        <a class="btn btn-danger" href="/comments_del/{{ comment['id'] }}/{{ exc_id }}">Удалить</a>
+    </div>
+    {% endfor %}
+
+    <form action="" method="post">
+        <div>
+            {{ writecom.csrf_token }}
+        </div>
+        {% for field in writecom if field.name != "csrf_token" %}
+            <div>{{ field() }}</div>
+            {% for error in field.errors %}
+                <div class="error">{{ error }}</div>
+            {% endfor %}
+        {% endfor %}
+    </form>
+{% endblock %}
