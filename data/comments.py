@@ -13,7 +13,7 @@ class Comment(DeclaratingDataBase):
     name_user = sqlalchemy.Column(sqlalchemy.String, sqlalchemy.ForeignKey('users.login'))
     role_user = sqlalchemy.Column(sqlalchemy.Integer, sqlalchemy.ForeignKey('users.role'))
     text = sqlalchemy.Column(sqlalchemy.Text)
-    date = sqlalchemy.Column(sqlalchemy.DateTime, default=datetime.datetime.now)
+    date = sqlalchemy.Column(sqlalchemy.String, default=datetime.datetime.now)
 
 
     def __repr__(self):

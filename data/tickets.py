@@ -9,7 +9,7 @@ class Ticket(DeclaratingDataBase):
     id = sqlalchemy.Column(sqlalchemy.Integer, primary_key=True, autoincrement=True)
     id_event = sqlalchemy.Column(sqlalchemy.Integer, sqlalchemy.ForeignKey('excursions.id'))
     name_event = sqlalchemy.Column(sqlalchemy.Integer, sqlalchemy.ForeignKey('excursions.title'))
-    price_event = sqlalchemy.Column(sqlalchemy.Float, sqlalchemy.ForeignKey('excursions.price'))
+    price_event = sqlalchemy.Column(sqlalchemy.Integer, sqlalchemy.ForeignKey('excursions.price'))
     id_user = sqlalchemy.Column(sqlalchemy.Integer, sqlalchemy.ForeignKey('users.id'))
     name_user = sqlalchemy.Column(sqlalchemy.Integer, sqlalchemy.ForeignKey('users.login'))
     count_of_people = sqlalchemy.Column(sqlalchemy.Integer, default=1)

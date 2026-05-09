@@ -6,7 +6,7 @@
 {% endblock %}
 
 {% block content %}
-    <form action="" method="post" enctype="multipart/form-data" novalidate>
+    <form action="/excursions_put/{{ exc_id }}" method="put" enctype="multipart/form-data" novalidate>
         <div>
             {{ form.csrf_token }}
         </div>

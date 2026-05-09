@@ -3,5 +3,5 @@ import wtforms
 
 
 class WriteComment(FlaskForm):
-    comment = wtforms.StringField('Напишите отзыв об экскурсии...', default='...')
-    submit = wtforms.SubmitField('Отправить')
+    comment = wtforms.TextAreaField(render_kw={'placeholder': 'Напишите отзыв об экскурсии...'})
+    submit = wtforms.SubmitField('Отправить отзыв об экскурсии')

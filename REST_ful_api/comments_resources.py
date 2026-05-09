@@ -6,11 +6,20 @@ from data import db_session
 from datetime import datetime
 
 
+parser = reqparse.RequestParser()
+parser.add_argument('id_event', required=True, type=int)
+parser.add_argument('id_user', required=True, type=int)
+parser.add_argument('name_user', required=True)
+parser.add_argument('role_user', required=True)
+parser.add_argument('text', required=True)
+parser.add_argument('date', required=True, type=str)
+
+
 def abort_if_comments_not_found(com_id):
     session = db_session.create_session()
     comment = session.query(Comment).get(com_id)
     if not comment:
-        abort(404, message=f"Comment {com_id} not found")
+        abort(404)
 
 
 class CommentsResource(Resource):
@@ -18,9 +27,14 @@ class CommentsResource(Resource):
         abort_if_comments_not_found(com_id)
         session = db_session.create_session()
         comment = session.get(Comment, com_id)
-        return jsonify({'comment': comment.to_dict(
-            only=('id', 'id_event', 'id_user', 'name_user',
-                  'role_user', 'text', 'date'))})
+        return jsonify({'comments':
+            {'id': comment.id,
+             'id_event': comment.id_event,
+             'id_user': comment.id_user,
+             'name_user': comment.name_user,
+             'role_user': comment.role_user,
+             'text': comment.text,
+             'date': comment.date}})
 
     def delete(self, com_id):
         abort_if_comments_not_found(com_id)
@@ -35,13 +49,18 @@ class CommentsListResource(Resource):
     def get(self):
         session = db_session.create_session()
         comments = session.query(Comment).all()
-        return jsonify({'comments': [item.to_dict(
-            only=('id', 'id_event', 'id_user', 'name_user',
-                  'role_user', 'text', 'date')) \
-            for item in comments]})
+        return jsonify({'comments': [
+            {'id': item.id,
+             'id_event': item.id_event,
+             'id_user': item.id_user,
+             'name_user': item.name_user,
+             'role_user': item.role_user,
+             'text': item.text,
+             'date': item.date} for item in comments
+        ]})
 
     def post(self):
-        args = parser.parse_args()
+        args = self.parser.parse_args()
         session = db_session.create_session()
         comment = Comment(
             id_event=args['id_event'],
@@ -54,13 +73,3 @@ class CommentsListResource(Resource):
         session.add(comment)
         session.commit()
         return jsonify({'id': comment.id})
-
-
-if __name__ == "__main__":
-    parser = reqparse.RequestParser()
-    parser.add_argument('id_event', required=True, type=int)
-    parser.add_argument('id_user', required=True, type=int)
-    parser.add_argument('name_user', required=True)
-    parser.add_argument('role_user', required=True)
-    parser.add_argument('text', required=True)
-    parser.add_argument('date', required=True, type=datetime)

@@ -4,11 +4,18 @@ from data.users import User
 from data import db_session
 
 
+parser = reqparse.RequestParser()
+parser.add_argument('login', required=True)
+parser.add_argument('hashed_password', required=True)
+parser.add_argument('email', required=True)
+parser.add_argument('role', required=True)
+
+
 def abort_if_users_not_found(user_id):
     session = db_session.create_session()
     user = session.query(User).get(user_id)
     if not user:
-        abort(404, message=f"User {user_id} not found")
+        abort(404)
 
 
 class UsersResource(Resource):
@@ -16,8 +23,11 @@ class UsersResource(Resource):
         abort_if_users_not_found(user_id)
         session = db_session.create_session()
         user = session.get(User, user_id)
-        return jsonify({'user': user.to_dict(
-            only=('user_id', 'login', 'email', 'role'))})
+        return jsonify({'user':
+            {'id': user.id,
+             'login': user.login,
+             'email': user.email,
+             'role': user.role}})
 
     def delete(self, user_id):
         abort_if_users_not_found(user_id)
@@ -32,8 +42,12 @@ class UsersListResource(Resource):
     def get(self):
         session = db_session.create_session()
         users = session.query(User).all()
-        return jsonify({'users': [item.to_dict(
-            only=('id', 'login', 'email', 'role')) for item in users]})
+        return jsonify({'users': [
+            {'id': item.id,
+             'login': item.login,
+             'email': item.email,
+             'role': item.role} for item in users
+        ]})
 
     def post(self):
         args = parser.parse_args()
@@ -47,11 +61,3 @@ class UsersListResource(Resource):
         session.add(user)
         session.commit()
         return jsonify({'id': user.id})
-
-
-if __name__ == "__main__":
-    parser = reqparse.RequestParser()
-    parser.add_argument('login', required=True)
-    parser.add_argument('hashed_password', required=True)
-    parser.add_argument('email', required=True)
-    parser.add_argument('role', required=True)
