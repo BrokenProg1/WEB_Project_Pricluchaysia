@@ -29,4 +29,7 @@
             <div class="error">{{ error }}</div>
         {% endfor %}
     {% endfor %}
+    {% if not are_excs_exist %}
+        <p>Экскурсий нет</p>
+    {% endif %}
 {% endblock %}

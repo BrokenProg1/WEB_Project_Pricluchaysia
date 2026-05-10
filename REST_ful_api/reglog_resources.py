@@ -30,7 +30,7 @@ class RegisterResource(Resource):
         return jsonify({'id': user.id})
 
 
-class LoginResource(Resource):
+"""class LoginResource(Resource):  # Попытка вживления провалилась
     def post(self):
         db_sess = db_session.create_session()
         args = parser.parse_args()
@@ -39,4 +39,4 @@ class LoginResource(Resource):
             abort(404)
         if not check_password_hash(user.hashed_password, args['password']):
             abort(405)
-        login_user(user)
+        login_user(user)"""

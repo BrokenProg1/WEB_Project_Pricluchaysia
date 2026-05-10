@@ -65,7 +65,9 @@ class ExcursionsListResource(Resource):
              'title': item.title,
              'description': item.description,
              'price': item.price,
-             'way': item.way} for item in excursions
+             'img': item.img,
+             'way': item.way,
+             'img_way': item.img_way} for item in excursions
         ]})
 
     def post(self):

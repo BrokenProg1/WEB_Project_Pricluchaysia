@@ -9,7 +9,7 @@
 {% endblock %}
 
 {% block content %}
-    <p>Вы: {{ user.role }}</p>
+    <p>Экскурсии:</p>
     {% for exc in excursions %}
         <div>
             <img src="{{ exc['img'] }}" alt="NO_DATA">
@@ -28,4 +28,7 @@
         {% endfor %}
     <br>
     {% endfor %}
+    {% if not are_excs_exist %}
+        <p>Экскурсий нет</p>
+    {% endif %}
 {% endblock %}

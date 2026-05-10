@@ -17,6 +17,8 @@
                     <a class="btn btn-danger" href="/logout">Выйти</a>
                     <a class="btn btn-warning" href="/profile">Профиль</a>
                     {% block menu %}{% endblock %}
+                    <p>Ваша роль: {{ current_user.role }}</p>
+                    <p>{{ current_user.login }}</p>
                 </p>
             {% else %}
                 <p>

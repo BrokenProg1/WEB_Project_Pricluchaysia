@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+
+{% block menu %}
+    <a class="btn btn-success" href="/main">Главное меню</a>
+{% endblock %}
+
+{% block content %}
+    <p>Пользователи:</p>
+    <div>
+        {% for user in users %}
+            {% for field in user %}
+                <p>{{ field }}: {{ user[field] }}</p>
+            {% endfor %}
+            <br>
+        {% endfor %}
+    </div>
+    <br>
+    <form class="rules-controller" method="post">
+        <label>ИЗМЕНЕНИЕ ПРАВ ПОЛЬЗОВАТЕЛЕЙ</label>
+        <br></br>
+        <label>ВАЖНО: убедитесь в корректности заполнения формы перед её отправкой</label>
+        <br><label>
+            Если вы хотите сделать кого-то администратором, помните, что отменить действие можно только при связи с разработчиком
+        </label></br>
+        <div class="form-group">
+            <label>Кого сделать пользователем?</label>
+            {% for u in douar['GUIDES'] %}
+                <div class="form-check">
+                  <input class="form-check-input" type="checkbox" name="user" id="user" value="{{ u.id }}">
+                  <label class="form-check-label" for="user">{{  u.login  }}; {{ u.role }}; {{ u.email }}</label>
+                </div>
+            {% endfor %}
+        </div>
+        <div class="form-group">
+            <label>Кого сделать гидом?</label>
+            {% for u in douar['USERS'] %}
+                <div class="form-check">
+                  <input class="form-check-input" type="checkbox" name="guide" id="guide" value="{{ u.id }}">
+                  <label class="form-check-label" for="guide">{{  u.login  }}; {{ u.role }}; {{ u.email }}</label>
+                </div>
+            {% endfor %}
+        </div>
+        <div class="form-group">
+            <label>Кого сделать администратором?</label>
+            {% for u in douar['USERS'] %}
+                <div class="form-check">
+                  <input class="form-check-input" type="checkbox" name="administrator" id="administrator" value="{{ u.id }}">
+                  <label class="form-check-label" for="administrator">{{  u.login  }}; {{ u.role }}; {{ u.email }}</label>
+                </div>
+            {% endfor %}
+            {% for u in douar['GUIDES'] %}
+                <div class="form-check">
+                  <input class="form-check-input" type="checkbox" name="administrator" id="administrator" value="male">
+                  <label class="form-check-label" for="administrator">{{  u.login  }}; {{ u.role }}; {{ u.email }}</label>
+                </div>
+            {% endfor %}
+        </div>
+        <p>Для изменения прав у администраторов свяжитесь с разработчиком</p>
+        <br></br>
+        <button type="submit" class="btn btn-primary">Поменять права</button>
+    </form>
+{% endblock %}
