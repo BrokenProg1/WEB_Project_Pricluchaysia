@@ -4,6 +4,7 @@ from data.db_session import DeclaratingDataBase
 
 
 class Excursion(DeclaratingDataBase):
+    # Шаблон объекта экскурсии
     __tablename__ = 'excursions'
 
     id = sqlalchemy.Column(sqlalchemy.Integer, primary_key=True, autoincrement=True)

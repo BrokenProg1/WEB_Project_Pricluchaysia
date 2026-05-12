@@ -5,6 +5,7 @@ from data.db_session import DeclaratingDataBase
 
 
 class Comment(DeclaratingDataBase):
+    # Шаблон объекта отзыва на экскурсию
     __tablename__ = 'comments'
 
     id = sqlalchemy.Column(sqlalchemy.Integer, primary_key=True, autoincrement=True)

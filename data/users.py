@@ -6,6 +6,7 @@ from flask_login import UserMixin
 
 
 class User(DeclaratingDataBase, UserMixin):
+    # Шаблон объекта пользователя
     __tablename__ = 'users'
 
     id = sqlalchemy.Column(sqlalchemy.Integer, primary_key=True, autoincrement=True)

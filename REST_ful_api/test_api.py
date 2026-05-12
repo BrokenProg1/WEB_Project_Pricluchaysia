@@ -1,7 +1,6 @@
 from requests import get, post, delete
-import datetime
+# Скрипт для теста REST-ful API
 
-# EXCURSIONS
 req = get('http://127.0.0.1:5000/api/excursions')
 print(req, req.content)
 
@@ -20,7 +19,6 @@ print(req, req.content)
 req = delete('http://127.0.0.1:5000/api/excursions/2')
 print(req, req.content)
 
-# USERS
 req = get('http://127.0.0.1:5000/api/users')
 print(req, req.content)
 
@@ -38,7 +36,6 @@ print(req, req.content)
 req = delete('http://127.0.0.1:5000/api/users/5')
 print(req, req.content)
 
-# TICKETS
 req = get('http://127.0.0.1:5000/api/tickets')
 print(req, req.content)
 
@@ -58,7 +55,6 @@ print(req, req.content)
 req = delete('http://127.0.0.1:5000/api/tickets/3')
 print(req, req.content)
 
-# COMMENTS
 req = get('http://127.0.0.1:5000/api/comments')
 print(req, req.content)
 
@@ -71,7 +67,7 @@ req = post('http://127.0.0.1:5000/api/comments', json={
     'name_user': 'kl',
     'role_user': 'user',
     'text': 'comment.text',
-    'date': datetime.datetime.now()  # Считаем, что работает
+    'date': '2024-11-13 00:00:00'
 })
 print(req, req.content)
 

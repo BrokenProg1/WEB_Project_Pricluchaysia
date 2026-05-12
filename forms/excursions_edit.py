@@ -3,6 +3,7 @@ import wtforms
 
 
 class EditExc(FlaskForm):
+    # Форма для изменения экскурсии
     title = wtforms.StringField('Новое название')
     description = wtforms.StringField('Новое описание')
     price = wtforms.IntegerField('Новая цена')

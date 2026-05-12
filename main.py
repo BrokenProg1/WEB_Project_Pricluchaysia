@@ -1,84 +1,64 @@
-# OUTER MODULES:
 import os
 import datetime
 import requests
-import pprint
-import json
 
 from flask import *
-from flask_wtf import form
-from werkzeug.security import generate_password_hash, check_password_hash
+
+from werkzeug.security import check_password_hash
 from werkzeug.utils import secure_filename
+
 from datetime import datetime
-from flask_login import LoginManager, UserMixin, login_user, logout_user, current_user, login_required
-from flask_restful import reqparse, abort, Api, Resource
+
+from flask_login import LoginManager, login_user, logout_user, current_user, login_required
+
+from flask_restful import abort, Api
+
 from PIL import Image
+
 from io import BytesIO
-# END
-# INNER MODULES:
-# databases:
+
 from data import db_session
 from data.users import User
 from data.excursions import Excursion
-from data.tickets import Ticket
-from data.comments import Comment
-# forms:
+from extras.db_script_for_debugging import function_for_db_debugging
+from extras.db_script_for_initialization import function_for_db_initialization
+
 from forms.registration import RegistrationForm
 from forms.login import LoginForm
 from forms.excursions_edit import EditExc
 from forms.excursion_adding import AddiExc
 from forms.booking_on_an_exc import BookOnAnExc
 from forms.write_comment import WriteComment
-# REST-ful API:
+
 from REST_ful_api import (users_resources,
                           excursions_resouces,
                           tickets_resources,
                           comments_resources,
                           reglog_resources)
-# EXTRAS
+
 from extras.functions import secure_change_to_user
-# END
+
+from extras.app import Pricluchaysia
+
 
 app = Flask(__name__)
 api = Api(app)
-app.config['SECRET_KEY'] = 'yandexlyceum_secret_key'  # подумать над заменой CSRF-ключа в далёком будущем
-app.config['UPLOAD_FOLDER'] = './static/images/'
-maps_server_address = 'https://static-maps.yandex.ru/v1?'
-maps_api_key = 'f3a0fe3a-b07e-4840-a1da-06f18b2ddf13'
-geocoder_api_server = "https://geocode-maps.yandex.ru/1.x/"
-geocoder_api_key = '8013b162-6b42-4997-9691-77b7074026e0'  # сменить в будущем
+application = Pricluchaysia(app)
 login_manager = LoginManager()
 login_manager.init_app(app)
-host_name = 'localhost:5000'  # сменить для хостинга
-protocols = ['http']
 
-# -----L O G I N-----
+
 @login_manager.user_loader
-# can`t be REST-fulled
 def load_user(user_id):
+    # Получение объекта пользователя
     db_sess = db_session.create_session()
     return db_sess.get(User, user_id)
-    # Здесь можно было бы использовать:
-    # requests.get(f'{protocols[0]}://{host_name}/api/users/{user_id}').json()['user'] ,
-    # но возвращается словарь, а не объект
-    # Я пытался создать свой типо словарь, который мог бы обращаться к атрибутам как к ключам,
-    # и из ответа перебросить данные туда, но атрибуты пользователя, создающиеся в объекте изначально,
-    # я не получал, поэтому вернулся к ORM
-    """
-    user = requests.get(f'{protocols[0]}://{host_name}/api/users/{user_id}').json()['user']
-    return special_dict(
-        email=user['email'],
-        id=user['id'],
-        login=user['login'],
-        role=user['role']
-    )
-    """
 
 
 @app.route('/', methods=["GET", "POST"])
 @app.route('/login', methods=["GET", "POST"])
-# попросить о помощи с типами данных
 def login_page():
+    # Страница авторизации
     form = LoginForm()
     if form.validate_on_submit():
         db_sess = db_session.create_session()
@@ -91,37 +71,35 @@ def login_page():
 
 @app.route('/logout', methods=["GET", "POST"])
 @login_required
-# can`t be REST-fulled
 def logout():
+    # Функция выхода из своего аккаунта
     logout_user()
     return redirect("/")
-# -----E N D-----
-# -----R E G I S T R A T I O N-----
+
+
 @app.route('/register', methods=["GET", "POST"])
-# REST-fulled
 def registration_page():
+    # Страница регистрации новых пользователей
     form = RegistrationForm()
     if form.validate_on_submit():
         if form.password_field.data != form.password_again_field.data:
             return render_template('register.html', title='Регистрация нового пользователя',
                                    form=form,
                                    message="Пароли не совпадают")
-        requests.post(f'{protocols[0]}://{host_name}/api/register', json={
+        requests.post(f'{application.protocols[0]}://{application.host_name}/api/register', json={
             'email': form.email_field.data,
             'login': form.username_field.data,
             'password': form.password_field.data
         })
-
         return redirect('/')
     return render_template('register.html', title='Регистрация нового пользователя', form=form)
-# -----E N D-----
-# -----P A G E S-----
+
+
 @app.route('/main', methods=["GET", "POST"])
 @login_required
-# can`t be REST-fulled
 def main_page():
-    secure_change_to_user(current_user)
-    print(current_user.role)
+    # Главная страница сервиса
+    secure_change_to_user()
     parameters = {
         'title': 'Главная страница',
         'image': url_for('static', filename='images/THEREISNOPHOTO.png'),
@@ -133,11 +111,11 @@ def main_page():
 
 @app.route('/profile', methods=["GET", "POST"])
 @login_required
-# REST-fulled
 def profile_page():
-    secure_change_to_user(current_user)
-    user = requests.get(f'{protocols[0]}://{host_name}/api/users/{current_user.id}').json()['user']
-    all_tics = requests.get(f'{protocols[0]}://{host_name}/api/tickets').json()['tickets']
+    # Страница профиля конкретного пользователя
+    secure_change_to_user()
+    user = requests.get(f'{application.protocols[0]}://{application.host_name}/api/users/{current_user.id}').json()['user']
+    all_tics = requests.get(f'{application.protocols[0]}://{application.host_name}/api/tickets').json()['tickets']
     tickets = [x for x in all_tics if x['id_user'] == current_user.id]
     parameters = {
         'title': f'Профиль пользователя {user['login']}',
@@ -147,13 +125,13 @@ def profile_page():
     }
     return render_template('profile.html', **parameters)
 
-# EXCURSIONS
+
 @app.route('/excursions', methods=["GET"])
 @login_required
-# REST-fulled
-def excursions():  # для всех пользователей
-    secure_change_to_user(current_user)
-    excursions = requests.get(f'{protocols[0]}://{host_name}/api/excursions').json()['excursions']
+def watching_excursions_page():
+    # Страница просмотра экскурсий для всех категорий пользователей: обычных, гидов и администраторов
+    secure_change_to_user()
+    excursions = requests.get(f'{application.protocols[0]}://{application.host_name}/api/excursions').json()['excursions']
     parameters = {
         'title': 'Экскурсии',
         'excursions': excursions,
@@ -165,18 +143,18 @@ def excursions():  # для всех пользователей
 
 @app.route('/excursions/<int:exc_id>', methods=["GET", "POST", "DELETE"])
 @login_required
-# REST-fulled
-def one_excursion(exc_id):
-    secure_change_to_user(current_user)
+def watching_one_excursion_page(exc_id):
+    # Просмотр отзывов под конкретной экскурсией
+    secure_change_to_user()
     form = WriteComment()
 
     if request.method == 'GET':
-        resp = requests.get(f'{protocols[0]}://{host_name}/api/excursions/{exc_id}')
+        resp = requests.get(f'{application.protocols[0]}://{application.host_name}/api/excursions/{exc_id}')
 
         data = resp.json()
         excursion = data['excursion']
 
-        resp = requests.get(f'{protocols[0]}://{host_name}/api/comments')
+        resp = requests.get(f'{application.protocols[0]}://{application.host_name}/api/comments')
         data = resp.json()
         all_comments = data['comments']
 
@@ -196,17 +174,18 @@ def one_excursion(exc_id):
             'text': form.comment.data,
             'date': str(datetime.today())
         }
-        requests.post(f'{protocols[0]}://{host_name}/api/comments', json=new_comment)
+        requests.post(f'{application.protocols[0]}://{application.host_name}/api/comments', json=new_comment)
 
         return redirect(f'/excursions/{exc_id}')
 
 
 @app.route('/watching_excs', methods=["GET"])
 @login_required
-# REST-fulled
-def watching_excs():  # для привилегированных пользователей
-    secure_change_to_user(current_user)
-    excursions = requests.get(f'{protocols[0]}://{host_name}/api/excursions').json()['excursions']
+def watching_excursions_page_for_privileged():
+    # Страница для просмотра экскурсий только для привилегированных пользователей, администраторов и гидов,
+    # с соответствующим функционалом
+    secure_change_to_user()
+    excursions = requests.get(f'{application.protocols[0]}://{application.host_name}/api/excursions').json()['excursions']
     parameters = {
         'title': 'Просмотр экскурсий гидами и администраторами',
         'excursions': excursions,
@@ -218,9 +197,9 @@ def watching_excs():  # для привилегированных пользов
 
 @app.route('/excursions_edit/<int:exc_id>', methods=["GET", "POST"])
 @login_required
-# unREST-fulled
-def excursions_edit(exc_id):
-    secure_change_to_user(current_user)
+def editing_excursions_page(exc_id):
+    # Страница для изменения экскурсий
+    secure_change_to_user()
     if current_user.role not in ['guide', 'administrator']:
         return redirect('/main')
     form = EditExc()
@@ -246,46 +225,48 @@ def excursions_edit(exc_id):
             filename = secure_filename(img_file.filename)
             if filename:
                 if exc.img:
-                    old_path = os.path.join(app.config['UPLOAD_FOLDER'],
+                    old_path = os.path.join(application.app.config['UPLOAD_FOLDER'],
                                             exc.img.replace('./static/images/', ''))
                     if os.path.exists(old_path):
                         os.remove(old_path)
                 unique_filename = f"{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}_{filename}"
 
-                filepath = os.path.join(app.config['UPLOAD_FOLDER'], unique_filename)
+                filepath = os.path.join(application.app.config['UPLOAD_FOLDER'], unique_filename)
                 img_file.save(filepath)
                 exc.img = f"static/images/{unique_filename}"
+            else:
+                exc.img = '0'
 
         toponyms = []
         entering = [s.strip('"') for s in exc.way.split('","')]
         for toponym in entering:
             params_for_map = {
-                'apikey': geocoder_api_key,
+                'apikey': application.geocoder_api_key,
                 'geocode': toponym,
                 'format': 'json'
             }
-            response = requests.get(geocoder_api_server, params=params_for_map)
+            response = requests.get(application.geocoder_api_server, params=params_for_map)
             toponyms.append(response.json()["response"]["GeoObjectCollection"]["featureMember"][0]["GeoObject"]['Point']['pos'])
         center = (sum([float(x.split()[0]) for x in toponyms]) / len(toponyms),
                   sum([float(y.split()[1]) for y in toponyms]) / len(toponyms))
         map_params = {
             "ll": ','.join([str(center[0]), str(center[1])]),
-            "spn": '0.005,0.005',
-            "apikey": maps_api_key,
+            "spn": '0.15,0.15',
+            "apikey": application.maps_api_key,
             'pt': '~'.join([f'{t.split(',')[0]},{t.split(',')[1]},pm2rdm' for t in [",".join(p.split()) for p in toponyms]]),
             'format': 'biz'
         }
-        response = requests.get(maps_server_address, params=map_params)
+        response = requests.get(application.maps_server_address, params=map_params)
         im = BytesIO(response.content)
 
         if exc.img_way:
-            old_path = os.path.join(app.config['UPLOAD_FOLDER'],
+            old_path = os.path.join(application.app.config['UPLOAD_FOLDER'],
                                     exc.img_way.replace('./static/images/', ''))
             if os.path.exists(old_path):
                 os.remove(old_path)
         unique_filename = f"{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.png"
 
-        filepath = os.path.join(app.config['UPLOAD_FOLDER'], unique_filename)
+        filepath = os.path.join(application.app.config['UPLOAD_FOLDER'], unique_filename)
         Image.open(im).save(filepath)
         exc.img_way = f"static/images/{unique_filename}"
 
@@ -298,22 +279,26 @@ def excursions_edit(exc_id):
 
 @app.route('/excursions_del/<int:exc_id>', methods=["GET", "POST"])
 @login_required
-# REST-fulled
-def excursions_del(exc_id):
-    secure_change_to_user(current_user)
+def deleting_excursions_page(exc_id):
+    # Обработчик удаления экскурсий
+    secure_change_to_user()
     if current_user.role not in ['guide', 'administrator']:
         return redirect('/main')
-    exc = requests.get(f'{protocols[0]}://{host_name}/api/excursions/{exc_id}').json()['excursion']
+    exc = requests.get(f'{application.protocols[0]}://{application.host_name}/api/excursions/{exc_id}').json()
     if exc:
         try:
-            os.remove(exc.img)
-        except Exception:
+            os.remove(exc['excursion']['img'])
+        except FileNotFoundError:
+            pass
+        except KeyError:
             pass
         try:
-            os.remove(exc.img_way)
-        except Exception:
+            os.remove(exc['excursion']['img_way'])
+        except FileNotFoundError:
             pass
-        requests.delete(f'{protocols[0]}://{host_name}/api/excursions/{exc_id}')
+        except KeyError:
+            pass
+        requests.delete(f'{application.protocols[0]}://{application.host_name}/api/excursions/{exc_id}')
     else:
         abort(404)
     return redirect('/watching_excs')
@@ -321,9 +306,9 @@ def excursions_del(exc_id):
 
 @app.route('/adding_excs', methods=["GET", "POST"])
 @login_required
-# REST-fulled
-def adding_excs():
-    secure_change_to_user(current_user)
+def adding_excursions_page():
+    # Страница добавления экскурсий
+    secure_change_to_user()
     if current_user.role not in ['guide', 'administrator']:
         return redirect('/main')
     form = AddiExc()
@@ -339,78 +324,79 @@ def adding_excs():
 
         img_file = form.img.data
 
-        if img_file and img_file.filename != '':
-            filename = secure_filename(img_file.filename)
-            if filename:
-                if new_excursion.get('img', 0) == 0:
-                    old_path = os.path.join(app.config['UPLOAD_FOLDER'],
-                                            new_excursion['img'].replace('./static/images/', ''))
-                    if os.path.exists(old_path):
-                        os.remove(old_path)
-                unique_filename = f"{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}_{filename}"
+        filename = secure_filename(img_file.filename)
+        if filename:
+            if new_excursion.get('img', 0) == 0:
+                old_path = os.path.join(application.app.config['UPLOAD_FOLDER'],
+                                        new_excursion['img'].replace('./static/images/', ''))
+                if os.path.exists(old_path):
+                    os.remove(old_path)
+            unique_filename = f"{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}_{filename}"
 
-                filepath = os.path.join(app.config['UPLOAD_FOLDER'], unique_filename)
-                img_file.save(filepath)
-                new_excursion['img'] = f"static/images/{unique_filename}"
+            filepath = os.path.join(application.app.config['UPLOAD_FOLDER'], unique_filename)
+            img_file.save(filepath)
+            new_excursion['img'] = f"static/images/{unique_filename}"
+        else:
+            new_excursion['img'] = '0'
 
         toponyms = []
         entering = [s.strip('"') for s in new_excursion['way'].split('","')]
         for toponym in entering:
             params_for_map = {
-                'apikey': geocoder_api_key,
+                'apikey': application.geocoder_api_key,
                 'geocode': toponym,
                 'format': 'json'
             }
-            response = requests.get(geocoder_api_server, params=params_for_map)
+            response = requests.get(application.geocoder_api_server, params=params_for_map)
             toponyms.append(
                 response.json()["response"]["GeoObjectCollection"]["featureMember"][0]["GeoObject"]['Point']['pos'])
         center = (sum([float(x.split()[0]) for x in toponyms]) / len(toponyms),
                   sum([float(y.split()[1]) for y in toponyms]) / len(toponyms))
         map_params = {
             "ll": ','.join([str(center[0]), str(center[1])]),
-            "spn": '0.01,0.01',
-            "apikey": maps_api_key,
+            "spn": '0.15,0.15',
+            "apikey": application.maps_api_key,
             'pt': '~'.join(
                 [f'{t.split(',')[0]},{t.split(',')[1]},pm2rdm' for t in [",".join(p.split()) for p in toponyms]]),
             'format': 'biz'
         }
-        response = requests.get(maps_server_address, params=map_params)
+        response = requests.get(application.maps_server_address, params=map_params)
         im = BytesIO(response.content)
 
         if new_excursion.get('img_way', 0) == 0:
-            old_path = os.path.join(app.config['UPLOAD_FOLDER'],
+            old_path = os.path.join(application.app.config['UPLOAD_FOLDER'],
                                     new_excursion['img_way'].replace('./static/images/', ''))
             if os.path.exists(old_path):
                 os.remove(old_path)
         unique_filename = f"{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.png"
 
-        filepath = os.path.join(app.config['UPLOAD_FOLDER'], unique_filename)
+        filepath = os.path.join(application.app.config['UPLOAD_FOLDER'], unique_filename)
         Image.open(im).save(filepath)
         new_excursion['img_way'] = f"static/images/{unique_filename}"
 
         new_excursion['way'] = form.way.data
 
-        requests.post(f'{protocols[0]}://{host_name}/api/excursions', json=new_excursion)
+        requests.post(f'{application.protocols[0]}://{application.host_name}/api/excursions', json=new_excursion)
 
         return redirect('/watching_excs')
     return render_template('adding_excs.html', form=form)
 
-# TICKETS
+
 @app.route('/book_on_an_exc/<int:exc_id>', methods=["GET", "POST"])
 @login_required
-# REST-fulled
-def book_on_an_exc(exc_id):
-    secure_change_to_user(current_user)
+def booking_on_an_excursion_page(exc_id):
+    # Страница для записи на экскурсии
+    secure_change_to_user()
     form = BookOnAnExc()
 
-    exc = requests.get(f"{protocols[0]}://{host_name}/api/excursions/{exc_id}").json()['excursion']
+    exc = requests.get(f"{application.protocols[0]}://{application.host_name}/api/excursions/{exc_id}").json()['excursion']
     if not exc:
         abort(404)
     if request.method == 'POST':
         if form.count_of_people.data < 1:
             abort(400)
 
-        is_there_a_tic = requests.get(f"{protocols[0]}://{host_name}/api/tickets").json()['tickets']
+        is_there_a_tic = requests.get(f"{application.protocols[0]}://{application.host_name}/api/tickets").json()['tickets']
         for tic in is_there_a_tic:
             if tic['id_event'] == exc_id and \
             tic['id_user'] == current_user.id and \
@@ -426,7 +412,7 @@ def book_on_an_exc(exc_id):
             'count_of_people': form.count_of_people.data
         }
 
-        requests.post(f"{protocols[0]}://{host_name}/api/tickets", json=new_ticket)
+        requests.post(f"{application.protocols[0]}://{application.host_name}/api/tickets", json=new_ticket)
 
         if current_user.role == "user":
             return redirect('/excursions')
@@ -441,27 +427,29 @@ def book_on_an_exc(exc_id):
     }
     return render_template('book_on_an_exc.html', **parameters)
 
-# COMMENTS
-@app.route('/comments_del/<int:com_id>/<int:exc_id>', methods=['GET', 'DELETE'])
-@login_required
-# REST-fulled
-def comments_del(com_id, exc_id):
-    secure_change_to_user(current_user)
-    if current_user.role not in ["guide", "administrator"]:
-        return redirect('/main')
 
-    requests.delete(f'{protocols[0]}://{host_name}/api/comments/{com_id}')
+@app.route('/comments_del/<int:com_id>/<int:exc_id>/<is_him>', methods=['GET', 'DELETE'])
+@login_required
+def deleting_comments_page(com_id, exc_id, is_him):
+    # Обработчик удаления отзывов под экскурсиями
+    secure_change_to_user()
+    if current_user.role not in ["administrator"]:
+        if is_him == 'False':
+            return redirect('/main')
+
+    requests.delete(f'{application.protocols[0]}://{application.host_name}/api/comments/{com_id}')
 
     return redirect(f'/excursions/{exc_id}')
 
-# USERS
+
 @app.route('/watching_users', methods=['GET', "POST"])
 @login_required
-def watching_users():
-    secure_change_to_user(current_user)
+def watching_users_and_editing_permissions_page():
+    # Страница для просмотра всех пользователей администраторами и изменения ими прав всех пользователей
+    secure_change_to_user()
     if current_user.role != "administrator":
         return redirect('/main')
-    users = requests.get(f"{protocols[0]}://{host_name}/api/users").json()['users']
+    users = requests.get(f"{application.protocols[0]}://{application.host_name}/api/users").json()['users']
     restructure_by_role = {
         'USERS': [x for x in users if x['role'] == 'user'],
         'GUIDES': [x for x in users if x['role'] == 'guide']
@@ -469,7 +457,7 @@ def watching_users():
     if request.method == "GET":
         pass
     elif request.method == "POST":
-        change_list = [(change_to, int(id)) for change_to, id in request.form.items()]
+        change_list = [(change_to, int(id_)) for change_to, id_ in request.form.items()]
         ids = set([x[1] for x in change_list])
 
         if len(change_list) != len(ids):
@@ -488,13 +476,12 @@ def watching_users():
         db_sess.close()
         return redirect('/watching_users')
 
-    # douar - Dict Of Users And Roles
-    return render_template('watching_users.html', users=users, douar=restructure_by_role)
-# -----E N D-----
-# -----T U R N I N G _ O N-----
+    return render_template('watching_users.html', users=users, roles=restructure_by_role)
+
+
 if __name__ == '__main__':
+    # Инициализация приложения
     db_session.global_init("db/databaseFile.db")
-    session = db_session.create_session()
 
     api.add_resource(users_resources.UsersResource, '/api/users/<int:user_id>')
     api.add_resource(users_resources.UsersListResource, '/api/users')
@@ -505,84 +492,9 @@ if __name__ == '__main__':
     api.add_resource(comments_resources.CommentsResource, '/api/comments/<int:com_id>')
     api.add_resource(comments_resources.CommentsListResource, '/api/comments')
     api.add_resource(reglog_resources.RegisterResource, '/api/register')
-    # Попытка вживления провалилась
-    """api.add_resource(reglog_resources.LoginResource, '/api/login')"""
 
-    session.query(Comment).delete()
-    session.query(Ticket).delete()
-    session.query(Excursion).delete()
-    session.query(User).delete()
+    if application.mod == 'debug':
+        function_for_db_debugging()
+    function_for_db_initialization()
 
-    # users
-    user1 = User()
-    user1.login = 'log_1'
-    user1.email = 'user1@user.user'
-    user1.hashed_password = generate_password_hash('123')
-    user1.role = 'user'
-    session.add(user1)
-
-    user2 = User()
-    user2.login = 'log_2'
-    user2.email = 'user2@user.user'
-    user2.hashed_password = generate_password_hash('123')
-    user2.role = 'user'
-    session.add(user2)
-
-    user3 = User()
-    user3.login = 'log_3'
-    user3.email = 'user3@user.user'
-    user3.hashed_password = generate_password_hash('123')
-    user3.role = 'guide'
-    session.add(user3)
-
-    user4 = User()
-    user4.login = 'log_4'
-    user4.email = 'user4@user.user'
-    user4.hashed_password = generate_password_hash('123')
-    user4.role = 'administrator'
-    session.add(user4)
-    # end
-    # excursions
-    exc1 = Excursion()
-    exc1.title = 'exc_1'
-    exc1.description = 'Just an excursion'
-    exc1.img = None
-    exc1.price = 100
-    exc1.way = '"Светланская улица, 89, Владивосток","улица Володарского, 27, Владивосток"'
-    exc1.img_way = None
-    session.add(exc1)
-    # end
-    # tickets
-    tic1 = Ticket()
-    tic1.id_event = 1
-    tic1.name_event = 'exc_1'
-    tic1.price_event = 100
-    tic1.id_user = 1
-    tic1.name_user = 'log_1'
-    tic1.count_of_people = 1
-    session.add(tic1)
-
-    tic2 = Ticket()
-    tic2.id_event = 1
-    tic2.name_event = 'exc_1'
-    tic2.price_event = 100
-    tic2.id_user = 2
-    tic2.name_user = 'log_2'
-    tic2.count_of_people = 3
-    session.add(tic2)
-    # end
-    # comments
-    com1 = Comment()
-    com1.id_event = 1
-    com1.id_user = 1
-    com1.name_user = 'log_1'
-    com1.role_user = 'user'
-    com1.text = 'I enjoyed by the guide!'
-    com1.date = str(datetime(2025, 12, 31))
-    session.add(com1)
-    # end
-    session.commit()
-    session.close()
-
-    app.run(debug=True)
-# -----E N D-----
+    app.run(debug=(application.mod == 'debug'))

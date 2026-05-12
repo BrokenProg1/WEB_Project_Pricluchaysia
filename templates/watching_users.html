@@ -24,7 +24,7 @@
         </label></br>
         <div class="form-group">
             <label>Кого сделать пользователем?</label>
-            {% for u in douar['GUIDES'] %}
+            {% for u in roles['GUIDES'] %}
                 <div class="form-check">
                   <input class="form-check-input" type="checkbox" name="user" id="user" value="{{ u.id }}">
                   <label class="form-check-label" for="user">{{  u.login  }}; {{ u.role }}; {{ u.email }}</label>
@@ -33,7 +33,7 @@
         </div>
         <div class="form-group">
             <label>Кого сделать гидом?</label>
-            {% for u in douar['USERS'] %}
+            {% for u in roles['USERS'] %}
                 <div class="form-check">
                   <input class="form-check-input" type="checkbox" name="guide" id="guide" value="{{ u.id }}">
                   <label class="form-check-label" for="guide">{{  u.login  }}; {{ u.role }}; {{ u.email }}</label>
@@ -42,7 +42,7 @@
         </div>
         <div class="form-group">
             <label>Кого сделать администратором?</label>
-            {% for u in douar['USERS'] %}
+            {% for u in roles['USERS'] %}
                 <div class="form-check">
                   <input class="form-check-input" type="checkbox" name="administrator" id="administrator" value="{{ u.id }}">
                   <label class="form-check-label" for="administrator">{{  u.login  }}; {{ u.role }}; {{ u.email }}</label>

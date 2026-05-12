@@ -1,5 +1,5 @@
-from flask import jsonify, abort, Flask
-from flask_restful import Resource, reqparse, Api
+from flask import jsonify, abort
+from flask_restful import Resource, reqparse
 from data.excursions import Excursion
 from data import db_session
 
@@ -14,6 +14,7 @@ parser.add_argument('img_way', required=True, type=str)
 
 
 def abort_if_excursions_not_found(exc_id):
+    # Если экскурсия не найдена, возвращаем код ошибки 404
     session = db_session.create_session()
     excursion = session.query(Excursion).get(exc_id)
     if not excursion:
@@ -22,6 +23,7 @@ def abort_if_excursions_not_found(exc_id):
 
 class ExcursionsResource(Resource):
     def get(self, exc_id):
+        # Получаем одну конкретную экскурсию
         abort_if_excursions_not_found(exc_id)
         session = db_session.create_session()
         excursion = session.get(Excursion, exc_id)
@@ -34,6 +36,7 @@ class ExcursionsResource(Resource):
         })
 
     def delete(self, exc_id):
+        # Удаляем одну конкретную экскурсию
         abort_if_excursions_not_found(exc_id)
         session = db_session.create_session()
         excursion = session.get(Excursion, exc_id)
@@ -42,6 +45,7 @@ class ExcursionsResource(Resource):
         return jsonify({'success': 'OK'})
 
     def put(self, exc_id):
+        # Изменяем одну конкретную экскурсию
         abort_if_excursions_not_found(exc_id)
         session = db_session.create_session()
         excursion = session.get(Excursion, exc_id)
@@ -58,6 +62,7 @@ class ExcursionsResource(Resource):
 
 class ExcursionsListResource(Resource):
     def get(self):
+        # Получаем список всех экскурсий
         session = db_session.create_session()
         excursions = session.query(Excursion).all()
         return jsonify({'excursions': [
@@ -71,6 +76,7 @@ class ExcursionsListResource(Resource):
         ]})
 
     def post(self):
+        # Создаём новую экскурсию
         args = parser.parse_args()
         session = db_session.create_session()
         excursion = Excursion(

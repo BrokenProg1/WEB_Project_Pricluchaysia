@@ -14,6 +14,7 @@ parser.add_argument('count_of_people', required=True, type=int)
 
 
 def abort_if_tickets_not_found(tic_id):
+    # Если запись на экскурсию не найдена, возвращаем код ошибки 404
     session = db_session.create_session()
     ticket = session.query(Ticket).get(tic_id)
     if not ticket:
@@ -22,6 +23,7 @@ def abort_if_tickets_not_found(tic_id):
 
 class TicketsResource(Resource):
     def get(self, tic_id):
+        # Получаем одну конкретную запись
         abort_if_tickets_not_found(tic_id)
         session = db_session.create_session()
         ticket = session.get(Ticket, tic_id)
@@ -35,6 +37,7 @@ class TicketsResource(Resource):
              'count_of_people': ticket.count_of_people}})
 
     def delete(self, tic_id):
+        # Удаляем одну конкретную запись
         abort_if_tickets_not_found(tic_id)
         session = db_session.create_session()
         ticket = session.get(Ticket, tic_id)
@@ -45,6 +48,7 @@ class TicketsResource(Resource):
 
 class TicketsListResource(Resource):
     def get(self):
+        # Получаем список всех записей
         session = db_session.create_session()
         tickets = session.query(Ticket).all()
         return jsonify({'tickets': [
@@ -58,6 +62,7 @@ class TicketsListResource(Resource):
         ]})
 
     def post(self):
+        # Создаём объект новой записи
         args = parser.parse_args()
         session = db_session.create_session()
         ticket = Ticket(

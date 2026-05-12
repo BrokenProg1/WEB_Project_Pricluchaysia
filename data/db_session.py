@@ -1,5 +1,3 @@
-"""Создание сессии с БД, с которой будут проходить взаимодействие"""
-
 import sqlalchemy as sa
 import sqlalchemy.orm as orm
 
@@ -11,6 +9,7 @@ DeclaratingDataBase = orm.declarative_base()
 __factory = None
 
 def global_init(db_file):
+    # Функция создания/подключения к БД
     global __factory
 
     if __factory:
@@ -31,5 +30,6 @@ def global_init(db_file):
 
 
 def create_session() -> Session:
+    # Функция для создания сессии общения между системой и БД
     global __factory
     return __factory()

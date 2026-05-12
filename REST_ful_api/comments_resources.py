@@ -3,8 +3,6 @@ from flask_restful import Resource, reqparse
 from data.comments import Comment
 from data import db_session
 
-from datetime import datetime
-
 
 parser = reqparse.RequestParser()
 parser.add_argument('id_event', required=True, type=int)
@@ -16,6 +14,7 @@ parser.add_argument('date', required=True, type=str)
 
 
 def abort_if_comments_not_found(com_id):
+    # Если отзыв не найден, возвращаем код ошибки 404
     session = db_session.create_session()
     comment = session.query(Comment).get(com_id)
     if not comment:
@@ -24,6 +23,7 @@ def abort_if_comments_not_found(com_id):
 
 class CommentsResource(Resource):
     def get(self, com_id):
+        # Получаю один конкретный отзыв
         abort_if_comments_not_found(com_id)
         session = db_session.create_session()
         comment = session.get(Comment, com_id)
@@ -37,6 +37,7 @@ class CommentsResource(Resource):
              'date': comment.date}})
 
     def delete(self, com_id):
+        # Удаляю один конкретный отзыв
         abort_if_comments_not_found(com_id)
         session = db_session.create_session()
         ticket = session.get(Comment, com_id)
@@ -47,6 +48,7 @@ class CommentsResource(Resource):
 
 class CommentsListResource(Resource):
     def get(self):
+        # Получаю список всех отзывов
         session = db_session.create_session()
         comments = session.query(Comment).all()
         return jsonify({'comments': [
@@ -60,7 +62,8 @@ class CommentsListResource(Resource):
         ]})
 
     def post(self):
-        args = self.parser.parse_args()
+        # Создаю новый отзыв
+        args = parser.parse_args()
         session = db_session.create_session()
         comment = Comment(
             id_event=args['id_event'],

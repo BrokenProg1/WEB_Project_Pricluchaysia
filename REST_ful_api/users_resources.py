@@ -12,6 +12,7 @@ parser.add_argument('role', required=True)
 
 
 def abort_if_users_not_found(user_id):
+    # Если пользователь не найден, то возвращаем код ошибки 404
     session = db_session.create_session()
     user = session.query(User).get(user_id)
     if not user:
@@ -20,6 +21,7 @@ def abort_if_users_not_found(user_id):
 
 class UsersResource(Resource):
     def get(self, user_id):
+        # Получаем одного конкретного пользователя
         abort_if_users_not_found(user_id)
         session = db_session.create_session()
         user = session.get(User, user_id)
@@ -30,6 +32,7 @@ class UsersResource(Resource):
              'role': user.role}})
 
     def delete(self, user_id):
+        # Удаляем одного конкретного пользователя
         abort_if_users_not_found(user_id)
         session = db_session.create_session()
         user = session.get(User, user_id)
@@ -40,6 +43,7 @@ class UsersResource(Resource):
 
 class UsersListResource(Resource):
     def get(self):
+        # Получаем список всех пользователей
         session = db_session.create_session()
         users = session.query(User).all()
         return jsonify({'users': [
@@ -50,6 +54,7 @@ class UsersListResource(Resource):
         ]})
 
     def post(self):
+        # Создаём нового пользователя
         args = parser.parse_args()
         session = db_session.create_session()
         user = User(

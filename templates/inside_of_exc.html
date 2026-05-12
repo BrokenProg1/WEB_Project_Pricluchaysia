@@ -28,7 +28,9 @@
             <span class="comment-date">{{ comment['date'] }}</span>
         </div>
         <div class="comment-text">{{ comment['text'] }}</div>
-        <a class="btn btn-danger" href="/comments_del/{{ comment['id'] }}/{{ exc_id }}">Удалить</a>
+        {% if user.role == 'administrator' or comment['id_user'] == user.id %}
+            <a class="btn btn-danger" href="/comments_del/{{ comment['id'] }}/{{ exc_id }}/{{ comment['id_user'] == user.id }}">Удалить</a>
+        {% endif %}
     </div>
     {% endfor %}
 

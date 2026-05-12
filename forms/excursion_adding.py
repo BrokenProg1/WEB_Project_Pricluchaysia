@@ -3,6 +3,7 @@ import wtforms
 
 
 class AddiExc(FlaskForm):
+    # Форма для создания экскурсий
     title = wtforms.StringField('Название')
     description = wtforms.StringField('Описание')
     price = wtforms.IntegerField('Цена')

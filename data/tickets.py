@@ -4,6 +4,7 @@ from data.db_session import DeclaratingDataBase
 
 
 class Ticket(DeclaratingDataBase):
+    # Шаблон объекта записи на экскурсию
     __tablename__ = 'tickets'
 
     id = sqlalchemy.Column(sqlalchemy.Integer, primary_key=True, autoincrement=True)
