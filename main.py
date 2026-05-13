@@ -17,6 +17,8 @@ from PIL import Image
 
 from io import BytesIO
 
+from waitress import serve
+
 from data import db_session
 from data.users import User
 from data.excursions import Excursion
@@ -497,4 +499,4 @@ if __name__ == '__main__':
         function_for_db_debugging()
     function_for_db_initialization()
 
-    app.run(debug=(application.mod == 'debug'))
+    serve(app, host='127.0.0.1', port=5000)
