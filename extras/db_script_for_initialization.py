@@ -1,9 +1,6 @@
 from werkzeug.security import generate_password_hash
 
 from data import db_session
-from data.comments import Comment
-from data.excursions import Excursion
-from data.tickets import Ticket
 from data.users import User
 
 

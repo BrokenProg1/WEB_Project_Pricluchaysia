@@ -19,7 +19,6 @@ def global_init(db_file):
         raise Exception("You need write name of a database")
 
     conn_str = f"sqlite:///{db_file.strip()}?check_same_thread=False"
-    print(f"Connecting to the database {conn_str}...")
 
     engine = sa.create_engine(conn_str, echo=False, pool_pre_ping=True)
     __factory = orm.sessionmaker(bind=engine)

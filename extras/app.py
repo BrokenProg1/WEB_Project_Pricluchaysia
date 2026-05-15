@@ -10,4 +10,4 @@ class Pricluchaysia:
         self.geocoder_api_key = '8013b162-6b42-4997-9691-77b7074026e0'
         self.host_name = 'localhost:5000'
         self.protocols = ['http']
-        self.mod = 'debug'
+        self.mod = 'normal'

@@ -48,7 +48,7 @@
                   <label class="form-check-label" for="administrator">{{  u.login  }}; {{ u.role }}; {{ u.email }}</label>
                 </div>
             {% endfor %}
-            {% for u in douar['GUIDES'] %}
+            {% for u in roles['GUIDES'] %}
                 <div class="form-check">
                   <input class="form-check-input" type="checkbox" name="administrator" id="administrator" value="male">
                   <label class="form-check-label" for="administrator">{{  u.login  }}; {{ u.role }}; {{ u.email }}</label>
