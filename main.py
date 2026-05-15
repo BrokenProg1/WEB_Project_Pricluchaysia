@@ -120,7 +120,7 @@ def profile_page():
     all_tics = requests.get(f'{application.protocols[0]}://{application.host_name}/api/tickets').json()['tickets']
     tickets = [x for x in all_tics if x['id_user'] == current_user.id]
     parameters = {
-        'title': f'Профиль пользователя {user['login']}',
+        'title': f"Профиль пользователя {user['login']}",
         'user': user,
         'tickets': tickets,
         'has_tics': len(tickets) > 0
