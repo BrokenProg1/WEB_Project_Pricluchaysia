@@ -497,6 +497,8 @@ if __name__ == '__main__':
 
     if application.mod == 'debug':
         function_for_db_debugging()
-    function_for_db_initialization()
+    if application.first:
+        function_for_db_initialization()
+        application.first = False
 
     serve(app, host='0.0.0.0', port=5000)
