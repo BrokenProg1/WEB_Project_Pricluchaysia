@@ -27,6 +27,7 @@ class TicketsResource(Resource):
         abort_if_tickets_not_found(tic_id)
         session = db_session.create_session()
         ticket = session.get(Ticket, tic_id)
+        session.close()
         return jsonify({'ticket':
             {'id': ticket.id,
              'id_event': ticket.id_event,
@@ -43,6 +44,7 @@ class TicketsResource(Resource):
         ticket = session.get(Ticket, tic_id)
         session.delete(ticket)
         session.commit()
+        session.close()
         return jsonify({'success': 'OK'})
 
 
@@ -51,6 +53,7 @@ class TicketsListResource(Resource):
         # Получаем список всех записей
         session = db_session.create_session()
         tickets = session.query(Ticket).all()
+        session.close()
         return jsonify({'tickets': [
             {'id': item.id,
              'id_event': item.id_event,
@@ -75,4 +78,5 @@ class TicketsListResource(Resource):
         )
         session.add(ticket)
         session.commit()
+        session.close()
         return jsonify({'id': ticket.id})

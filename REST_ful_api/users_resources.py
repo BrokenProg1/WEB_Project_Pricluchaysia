@@ -25,6 +25,7 @@ class UsersResource(Resource):
         abort_if_users_not_found(user_id)
         session = db_session.create_session()
         user = session.get(User, user_id)
+        session.close()
         return jsonify({'user':
             {'id': user.id,
              'login': user.login,
@@ -38,6 +39,7 @@ class UsersResource(Resource):
         user = session.get(User, user_id)
         session.delete(user)
         session.commit()
+        session.close()
         return jsonify({'success': 'OK'})
 
 
@@ -46,6 +48,7 @@ class UsersListResource(Resource):
         # Получаем список всех пользователей
         session = db_session.create_session()
         users = session.query(User).all()
+        session.close()
         return jsonify({'users': [
             {'id': item.id,
              'login': item.login,
@@ -65,4 +68,5 @@ class UsersListResource(Resource):
         )
         session.add(user)
         session.commit()
+        session.close()
         return jsonify({'id': user.id})

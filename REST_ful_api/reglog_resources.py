@@ -26,4 +26,5 @@ class RegisterResource(Resource):
         user.set_password(args['password'])
         db_sess.add(user)
         db_sess.commit()
+        session.close()
         return jsonify({'id': user.id})

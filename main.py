@@ -65,6 +65,7 @@ def login_page():
     if form.validate_on_submit():
         db_sess = db_session.create_session()
         user = db_sess.query(User).filter(User.email == form.email_field.data).first()
+        db_sess.close()
         if user and check_password_hash(user.hashed_password, form.password_field.data):
             login_user(user)
             return redirect('/main')
@@ -207,10 +208,12 @@ def editing_excursions_page(exc_id):
     form = EditExc()
     db_sess = db_session.create_session()
     exc = db_sess.query(Excursion).filter(Excursion.id == exc_id).first()
+    db_sess.close()
     if not exc:
         abort(404)
 
     if request.method == "GET":
+        db_sess = db_session.create_session()
         form.title.data = exc.title
         form.description.data = exc.description
         form.price.data = exc.price
@@ -273,6 +276,7 @@ def editing_excursions_page(exc_id):
         exc.img_way = f"static/images/{unique_filename}"
 
         db_sess.commit()
+        db_sess.close()
         return redirect('/watching_excs')
     return render_template('excursions_edit.html',
                            form=form

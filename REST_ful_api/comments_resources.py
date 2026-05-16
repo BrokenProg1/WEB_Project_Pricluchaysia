@@ -27,6 +27,7 @@ class CommentsResource(Resource):
         abort_if_comments_not_found(com_id)
         session = db_session.create_session()
         comment = session.get(Comment, com_id)
+        session.close()
         return jsonify({'comments':
             {'id': comment.id,
              'id_event': comment.id_event,
@@ -43,6 +44,7 @@ class CommentsResource(Resource):
         ticket = session.get(Comment, com_id)
         session.delete(ticket)
         session.commit()
+        session.close()
         return jsonify({'success': 'OK'})
 
 
@@ -51,6 +53,7 @@ class CommentsListResource(Resource):
         # Получаю список всех отзывов
         session = db_session.create_session()
         comments = session.query(Comment).all()
+        session.close()
         return jsonify({'comments': [
             {'id': item.id,
              'id_event': item.id_event,
@@ -75,4 +78,5 @@ class CommentsListResource(Resource):
         )
         session.add(comment)
         session.commit()
+        session.close()
         return jsonify({'id': comment.id})

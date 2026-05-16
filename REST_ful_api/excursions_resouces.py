@@ -27,6 +27,7 @@ class ExcursionsResource(Resource):
         abort_if_excursions_not_found(exc_id)
         session = db_session.create_session()
         excursion = session.get(Excursion, exc_id)
+        session.close()
         return jsonify({'excursion':
             {'id': excursion.id,
              'title': excursion.title,
@@ -42,6 +43,7 @@ class ExcursionsResource(Resource):
         excursion = session.get(Excursion, exc_id)
         session.delete(excursion)
         session.commit()
+        session.close()
         return jsonify({'success': 'OK'})
 
     def put(self, exc_id):
@@ -57,6 +59,7 @@ class ExcursionsResource(Resource):
         excursion.way = args['way']
         excursion.img_way = args['img_way']
         session.commit()
+        session.close()
         return jsonify({'success': 'OK'})
 
 
@@ -65,6 +68,7 @@ class ExcursionsListResource(Resource):
         # Получаем список всех экскурсий
         session = db_session.create_session()
         excursions = session.query(Excursion).all()
+        session.close()
         return jsonify({'excursions': [
             {'id': item.id,
              'title': item.title,
@@ -89,4 +93,5 @@ class ExcursionsListResource(Resource):
         )
         session.add(excursion)
         session.commit()
+        session.close()
         return jsonify({'id': excursion.id})
