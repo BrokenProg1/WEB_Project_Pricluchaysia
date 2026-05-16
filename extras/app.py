@@ -11,4 +11,4 @@ class Pricluchaysia:
         self.host_name = 'localhost:5000'
         self.protocols = ['http']
         self.mod = 'normal'
-        self.first = False
+        self.first = True
